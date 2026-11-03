@@ -185,6 +185,8 @@
   details[open] summary::before { transform: rotate(45deg); }
   .record-group + .record-group { margin-top: 10px; }
 
+  .job-link { color: inherit; text-decoration: none; }
+  .job-link:hover, .job-link:focus-visible { text-decoration: underline; }
   .more-link { display: inline-block; margin-top: 14px; font-size: 12px; color: var(--accent-text); text-decoration: none; }
   .more-link:hover, .more-link:focus-visible { text-decoration: underline; }
   .empty { color: var(--text-faint); font-size: 13px; padding: 4px 0; }
@@ -358,9 +360,21 @@
           '</span></span><span class="item-value">' + esc(cap(j.when || "")) + "</span></li>";
       }).join("") + "</ul>";
     } else {
-      html += '<div class="empty">Nothing tracked yet. Say <b>"add internship: Target, finance intern, apply by Nov 20"</b>.</div>';
+      html += '<div class="empty">' + (c.hub ? "No applications in Career Hub yet." :
+        "Applications show up here once Career Hub is connected.") + "</div>";
     }
     html += "</div></div>";
+    var feed = c.feed || [];
+    html += '<div class="sub-head">New internships for you' + (c.feed_new ? " · " + c.feed_new + " this week" : "") + "</div>";
+    if (feed.length) {
+      html += '<ul class="list">' + feed.slice(0, 4).map(function (f) {
+        return '<li class="item"><a class="item-name job-link" href="' + esc(f.url) + '" target="_blank" rel="noopener">' +
+          esc(f.company) + ' <span class="muted">· ' + esc(f.title) + "</span></a>" +
+          '<span class="item-value">' + esc(cap(f.when)) + "</span></li>";
+      }).join("") + "</ul>";
+    } else {
+      html += '<div class="empty">Checking company job boards every morning. New matches land here.</div>';
+    }
     document.getElementById("career").innerHTML = html;
   }
 
