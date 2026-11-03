@@ -1,0 +1,566 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex">
+<title>BVOS</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icon-180.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="BVOS">
+<meta name="theme-color" content="#f6f5f4">
+<style>
+  :root {
+    --canvas: #f6f5f4;
+    --surface: #ffffff;
+    --well: #f2f1ef;
+    --line: rgba(0, 0, 0, 0.07);
+    --line-faint: rgba(0, 0, 0, 0.045);
+    --ink-1: rgba(0, 0, 0, 0.04);
+    --ink-2: rgba(0, 0, 0, 0.07);
+    --text-strong: #262628;
+    --text: #6f6f73;
+    --text-faint: #9a9a9d;
+    --accent: #3b82f6;
+    --accent-soft: rgba(59, 130, 246, 0.12);
+    --accent-text: #1d5fd1;
+    --success: #22c55e;
+    --success-soft: rgba(34, 197, 94, 0.13);
+    --success-text: #15803d;
+    --warning: #f59e0b;
+    --warning-soft: rgba(245, 158, 11, 0.15);
+    --warning-text: #b45309;
+    --danger: #ef4444;
+    --danger-soft: rgba(239, 68, 68, 0.1);
+    --danger-text: #b91c1c;
+    --notion: #8b8b8f;
+    --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.04), 0 0 0 1px rgba(0, 0, 0, 0.045);
+    --radius: 14px;
+    --radius-sm: 8px;
+    --font: system-ui, -apple-system, "Segoe UI", sans-serif;
+    color-scheme: light;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --canvas: #111113; --surface: #1a1a1d; --well: #222226;
+      --line: rgba(255, 255, 255, 0.08); --line-faint: rgba(255, 255, 255, 0.05);
+      --ink-1: rgba(255, 255, 255, 0.05); --ink-2: rgba(255, 255, 255, 0.09);
+      --text-strong: #f2f2f3; --text: #a1a1a6; --text-faint: #75757b;
+      --accent: #5b9bff; --accent-soft: rgba(91, 155, 255, 0.16); --accent-text: #8ab8ff;
+      --success-text: #4ade80; --warning-text: #fbbf24; --danger-text: #f87171;
+      --shadow-card: 0 0 0 1px rgba(255, 255, 255, 0.06);
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --canvas: #111113; --surface: #1a1a1d; --well: #222226;
+    --line: rgba(255, 255, 255, 0.08); --line-faint: rgba(255, 255, 255, 0.05);
+    --ink-1: rgba(255, 255, 255, 0.05); --ink-2: rgba(255, 255, 255, 0.09);
+    --text-strong: #f2f2f3; --text: #a1a1a6; --text-faint: #75757b;
+    --accent: #5b9bff; --accent-soft: rgba(91, 155, 255, 0.16); --accent-text: #8ab8ff;
+    --success-text: #4ade80; --warning-text: #fbbf24; --danger-text: #f87171;
+    --shadow-card: 0 0 0 1px rgba(255, 255, 255, 0.06);
+    color-scheme: dark;
+  }
+
+  * { box-sizing: border-box; }
+  html, body { margin: 0; }
+  body {
+    background: var(--canvas);
+    color: var(--text-strong);
+    font: 14px/1.4 var(--font);
+    -webkit-font-smoothing: antialiased;
+    font-variant-numeric: tabular-nums;
+  }
+  .wrap { max-width: 1180px; margin: 0 auto; padding: 28px 24px 48px; }
+
+  /* header */
+  .top { display: flex; align-items: baseline; gap: 12px; margin-bottom: 20px; }
+  .mark { font-weight: 650; letter-spacing: -0.01em; font-size: 15px; }
+  .date { color: var(--text); }
+  .status { margin-left: auto; display: flex; gap: 14px; color: var(--text-faint); font-size: 12px; }
+  .status span { display: inline-flex; align-items: center; gap: 6px; }
+  .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--success); flex: none; }
+  .dot[data-stale="true"] { background: var(--warning); }
+  .dot[data-missing="true"] { background: var(--ink-2); }
+
+  /* grid */
+  .grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+  .card {
+    background: var(--surface);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow-card);
+    padding: 18px 20px 20px;
+    min-width: 0;
+  }
+  .today { grid-column: span 2; }
+  .calendar { grid-column: 3; grid-row: 1 / span 3; }
+  .career { grid-column: span 2; }
+  .career-body { display: grid; grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr); gap: 28px; align-items: start; }
+  .career-body .sub-head { margin-top: 0; }
+  .card-head { display: flex; align-items: baseline; gap: 8px; margin-bottom: 14px; }
+  .card-title { font-size: 13px; font-weight: 600; color: var(--text-strong); }
+  .card-sub { font-size: 12px; color: var(--text-faint); margin-left: auto; }
+
+  /* today */
+  .lead { padding: 4px 0 18px; border-bottom: 1px solid var(--line-faint); margin-bottom: 6px; }
+  .lead-area { display: inline-flex; margin-bottom: 10px; }
+  .lead-title { font-size: 24px; line-height: 1.25; font-weight: 600; letter-spacing: -0.015em; text-wrap: balance; }
+  .lead-detail { color: var(--text); margin-top: 6px; }
+  .rows { list-style: none; margin: 0; padding: 0; }
+  .row {
+    display: grid; grid-template-columns: 74px minmax(0, 1fr) auto; gap: 12px; align-items: center;
+    padding: 10px 0; border-bottom: 1px solid var(--line-faint);
+  }
+  .row:last-child { border-bottom: 0; padding-bottom: 0; }
+  .row-title { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .row-detail { color: var(--text-faint); font-size: 12px; white-space: nowrap; }
+  .row-detail[data-urgent="true"] { color: var(--danger-text); }
+
+  .tag {
+    display: inline-flex; align-items: center; height: 20px; padding: 0 8px; border-radius: 999px;
+    font-size: 11px; font-weight: 550; justify-self: start;
+    background: var(--ink-1); color: var(--text);
+  }
+  .tag[data-area="School"] { background: var(--accent-soft); color: var(--accent-text); }
+  .tag[data-area="Health"] { background: var(--success-soft); color: var(--success-text); }
+  .tag[data-area="Career"] { background: var(--warning-soft); color: var(--warning-text); }
+
+  /* calendar */
+  .day + .day { margin-top: 16px; }
+  .day-label { font-size: 12px; color: var(--text-faint); margin-bottom: 6px; }
+  .event {
+    display: grid; grid-template-columns: 64px minmax(0, 1fr); gap: 10px;
+    padding: 8px 10px; border-radius: var(--radius-sm); position: relative;
+  }
+  .event + .event { margin-top: 2px; }
+  .event[data-now="true"] { background: var(--well); }
+  .event-time { color: var(--text-faint); font-size: 12px; padding-top: 1px; }
+  .event-title { display: flex; align-items: center; gap: 8px; min-width: 0; }
+  .event-title b { font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .event-where { color: var(--text-faint); font-size: 12px; margin-top: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .src { width: 6px; height: 6px; border-radius: 50%; background: var(--accent); flex: none; }
+  .src[data-source="notion"] { background: var(--notion); }
+  .src[data-source="due"] { background: var(--warning); }
+  .free { color: var(--text-faint); font-size: 12px; padding: 8px 10px; }
+  .legend { display: flex; gap: 14px; margin-top: 18px; padding-top: 14px; border-top: 1px solid var(--line-faint); color: var(--text-faint); font-size: 12px; }
+  .legend span { display: inline-flex; align-items: center; gap: 6px; }
+
+  /* big numbers */
+  .figure { display: flex; align-items: baseline; gap: 8px; margin-bottom: 4px; }
+  .figure-num { font-size: 40px; line-height: 1; font-weight: 600; letter-spacing: -0.03em; }
+  .figure-unit { color: var(--text-faint); }
+  .figure-note { color: var(--text); font-size: 13px; margin-bottom: 16px; }
+  .meter { height: 4px; border-radius: 999px; background: var(--ink-1); overflow: hidden; margin: 12px 0 16px; }
+  .meter i { display: block; height: 100%; border-radius: inherit; background: var(--accent); }
+
+  .list { list-style: none; margin: 0; padding: 0; }
+  .item { display: flex; align-items: baseline; gap: 12px; padding: 8px 0; border-top: 1px solid var(--line-faint); }
+  .item-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .item-value { margin-left: auto; color: var(--text); white-space: nowrap; font-size: 13px; }
+  .item-value strong { color: var(--text-strong); font-weight: 600; margin-left: 6px; }
+  .muted { color: var(--text-faint); }
+  .sub-head { font-size: 12px; color: var(--text-faint); margin: 18px 0 2px; }
+
+  .stages { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin: 4px 0 16px; }
+  .stage { background: var(--well); border-radius: var(--radius-sm); padding: 10px 10px 9px; }
+  .stage b { display: block; font-size: 18px; font-weight: 600; line-height: 1.1; }
+  .stage span { font-size: 11px; color: var(--text-faint); }
+  .stage[data-hot="true"] { background: var(--warning-soft); }
+  .stage[data-hot="true"] span { color: var(--warning-text); }
+
+  .pill { display: inline-flex; align-items: center; gap: 6px; height: 22px; padding: 0 9px; border-radius: 999px; font-size: 12px; font-weight: 550; background: var(--ink-1); color: var(--text); }
+  .pill[data-color="green"] { background: var(--success-soft); color: var(--success-text); }
+  .pill[data-color="yellow"] { background: var(--warning-soft); color: var(--warning-text); }
+  .pill[data-color="red"] { background: var(--danger-soft); color: var(--danger-text); }
+  .pill .dot { background: currentColor; }
+  .vitals { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 4px; }
+
+  details { margin-top: 14px; border-top: 1px solid var(--line-faint); padding-top: 12px; }
+  summary { cursor: pointer; font-size: 12px; color: var(--text); list-style: none; display: flex; align-items: center; gap: 6px; }
+  summary::-webkit-details-marker { display: none; }
+  summary::before { content: ""; width: 6px; height: 6px; border-right: 1.5px solid currentColor; border-bottom: 1.5px solid currentColor; transform: rotate(-45deg); transition: transform .15s; margin-right: 2px; }
+  details[open] summary::before { transform: rotate(45deg); }
+  .record-group + .record-group { margin-top: 10px; }
+
+  .more-link { display: inline-block; margin-top: 14px; font-size: 12px; color: var(--accent-text); text-decoration: none; }
+  .more-link:hover, .more-link:focus-visible { text-decoration: underline; }
+  .empty { color: var(--text-faint); font-size: 13px; padding: 4px 0; }
+  .empty b { color: var(--text); font-weight: 500; }
+  .banner { background: var(--warning-soft); color: var(--warning-text); border-radius: var(--radius-sm); padding: 10px 12px; font-size: 13px; margin-bottom: 16px; }
+
+  @media (max-width: 960px) {
+    .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .today { grid-column: span 2; }
+    .calendar { grid-column: auto; grid-row: auto; }
+    .career { grid-column: span 2; }
+  }
+  @media (max-width: 640px) {
+    .wrap { padding: 18px 16px 36px; }
+    .grid { grid-template-columns: minmax(0, 1fr); gap: 12px; }
+    .today, .career { grid-column: auto; }
+    .career-body { grid-template-columns: minmax(0, 1fr); gap: 0; }
+    .career-body .sub-head { margin-top: 18px; }
+    .top { flex-wrap: wrap; row-gap: 4px; }
+    .status { margin-left: 0; width: 100%; }
+    .lead-title { font-size: 21px; }
+    .row { grid-template-columns: 64px minmax(0, 1fr); }
+    .row-detail { grid-column: 2; margin-top: -6px; }
+  }
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top">
+    <div class="mark">BVOS</div>
+    <div class="date" id="date"></div>
+    <div class="status" id="status"></div>
+  </div>
+  <div id="banner"></div>
+  <div class="grid">
+    <section class="card today" id="today"></section>
+    <section class="card calendar" id="calendar"></section>
+    <section class="card" id="school"></section>
+    <section class="card" id="health"></section>
+    <section class="card career" id="career"></section>
+  </div>
+</div>
+<script>window.BVOS_APP = true;</script>
+<script>
+(function () {
+  "use strict";
+  var REFRESH_MS = 5 * 60 * 1000;
+
+  function esc(text) {
+    return String(text == null ? "" : text).replace(/[&<>"']/g, function (c) {
+      return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
+    });
+  }
+  function head(title, sub) {
+    return '<div class="card-head"><div class="card-title">' + esc(title) + "</div>" +
+      (sub ? '<div class="card-sub">' + esc(sub) + "</div>" : "") + "</div>";
+  }
+  function clock(iso) {
+    if (!iso) return "never";
+    var d = new Date(iso);
+    if (isNaN(d)) return iso;
+    var h = d.getHours() % 12 || 12, m = d.getMinutes();
+    return h + (m ? ":" + String(m).padStart(2, "0") : "") + (d.getHours() < 12 ? " am" : " pm");
+  }
+  function cap(s) { return s ? s.charAt(0).toUpperCase() + s.slice(1) : ""; }
+
+  function renderTop(data) {
+    var parts = (data.now || "").split(",");
+    document.getElementById("date").textContent = parts[0] || "";
+    var s = data.sources || {};
+    document.getElementById("status").innerHTML = ["calendar", "health"].map(function (k) {
+      var info = s[k] || {};
+      var label = info.updated ? cap(k) + " · " + clock(info.updated) : cap(k) + " · not connected";
+      return '<span><i class="dot" data-stale="' + !!info.stale + '" data-missing="' + !info.updated + '"></i>' + esc(label) + "</span>";
+    }).join("");
+    var missing = ["calendar", "health"].filter(function (k) { return !(s[k] || {}).updated; });
+    var note = data.banner != null ? data.banner
+      : (missing.length ? esc(cap(missing.join(" and "))) + " not connected yet." : "");
+    document.getElementById("banner").innerHTML = note ? '<div class="banner">' + note + "</div>" : "";
+  }
+
+  function renderToday(data) {
+    var items = data.today || [];
+    var html = head("Today", items.length ? items.length + " things" : "");
+    if (!items.length) {
+      html += '<div class="empty">Nothing urgent. Enjoy it.</div>';
+    } else {
+      var lead = items[0];
+      html += '<div class="lead"><span class="tag lead-area" data-area="' + esc(lead.area) + '">' + esc(lead.area) + "</span>" +
+        '<div class="lead-title">' + esc(lead.title) + "</div>" +
+        '<div class="lead-detail">' + esc(lead.detail) + "</div></div>";
+      html += '<ul class="rows">' + items.slice(1).map(function (it) {
+        return '<li class="row"><span class="tag" data-area="' + esc(it.area) + '">' + esc(it.area) + "</span>" +
+          '<span class="row-title">' + esc(it.title) + "</span>" +
+          '<span class="row-detail" data-urgent="' + (it.rank === 0) + '">' + esc(it.detail) + "</span></li>";
+      }).join("") + "</ul>";
+    }
+    document.getElementById("today").innerHTML = html;
+  }
+
+  function renderCalendar(data) {
+    var days = data.calendar || [];
+    var connected = (data.sources || {}).calendar && data.sources.calendar.updated;
+    var html = head("Calendar", "Next " + days.length + " days");
+    if (!connected) {
+      html += '<div class="empty"><b>Not connected yet.</b> /refresh pulls Google and Notion Calendar.</div>';
+    }
+    var now = new Date();
+    html += days.map(function (day, i) {
+      var events = day.events || [];
+      return '<div class="day"><div class="day-label">' + esc(day.label) + "</div>" +
+        (events.length ? events.map(function (e) {
+          return '<div class="event" data-now="' + (i === 0 && e === nextEvent(events, now)) + '">' +
+            '<div class="event-time">' + esc(e.time) + "</div>" +
+            '<div><div class="event-title"><i class="src" data-source="' + esc(e.source) + '"></i><b>' + esc(e.title) + "</b></div>" +
+            (e.where ? '<div class="event-where">' + esc(e.where) + "</div>" : "") + "</div></div>";
+        }).join("") : (connected ? '<div class="free">Nothing scheduled</div>' : "")) + "</div>";
+    }).join("");
+    html += '<div class="legend"><span><i class="src"></i>Events</span><span><i class="src" data-source="due"></i>Due dates</span><span><i class="src" data-source="notion"></i>Other</span></div>';
+    document.getElementById("calendar").innerHTML = html;
+  }
+  function nextEvent(events, now) {
+    var mins = now.getHours() * 60 + now.getMinutes();
+    for (var i = 0; i < events.length; i++) {
+      var m = /^(\d+)(?::(\d+))?\s*(am|pm)$/.exec(events[i].end || events[i].time || "");
+      if (!m) continue;
+      var t = (parseInt(m[1], 10) % 12 + (m[3] === "pm" ? 12 : 0)) * 60 + parseInt(m[2] || "0", 10);
+      if (t > mins) return events[i];
+    }
+    return null;
+  }
+
+  function renderSchool(data) {
+    var s = data.school || {};
+    var html = head("School", "Goal " + (s.goal || 4).toFixed(2));
+    if (s.gpa != null) {
+      html += '<div class="figure"><span class="figure-num">' + s.gpa.toFixed(2) + '</span><span class="figure-unit">GPA</span></div>' +
+        '<div class="meter"><i style="width:' + Math.min(100, (s.gpa / (s.goal || 4)) * 100) + '%"></i></div>';
+    } else {
+      html += '<div class="figure"><span class="figure-num muted">–</span><span class="figure-unit">GPA</span></div>' +
+        '<div class="figure-note">Waiting on grades.</div>';
+    }
+    if ((s.classes || []).length) {
+      html += '<ul class="list">' + s.classes.map(function (c) {
+        return '<li class="item"><span class="item-name">' + esc(c.code) + '</span><span class="item-value">' +
+          (c.pct != null ? c.pct.toFixed(1) + "%<strong>" + esc(c.letter) + "</strong>" : '<span class="muted">No grades yet</span>') +
+          "</span></li>";
+      }).join("") + "</ul>";
+    }
+    if ((s.upcoming || []).length) {
+      html += '<div class="sub-head">Coming up</div><ul class="list">' + s.upcoming.slice(0, 5).map(function (u) {
+        return '<li class="item"><span class="item-name">' + esc(u.what) + '</span><span class="item-value">' + esc(cap(u.when)) + "</span></li>";
+      }).join("") + "</ul>";
+    }
+    document.getElementById("school").innerHTML = html;
+  }
+
+  function renderCareer(data) {
+    var c = data.career || { counts: {}, active: [] };
+    var counts = c.counts || {};
+    var html = head("Career", "Internships");
+    var live = (counts.applied || 0) + (counts.interview || 0) + (counts.offer || 0);
+    html += '<div class="career-body"><div><div class="figure"><span class="figure-num">' + live + '</span><span class="figure-unit">in play</span></div>';
+    html += '<div class="stages">' + ["saved", "applied", "interview", "offer"].map(function (k) {
+      return '<div class="stage" data-hot="' + (k === "interview" && counts[k] > 0) + '"><b>' + (counts[k] || 0) + "</b><span>" + cap(k) + "</span></div>";
+    }).join("") + "</div></div><div>";
+    if ((c.active || []).length) {
+      html += '<div class="sub-head">Next steps</div><ul class="list">' + c.active.slice(0, 3).map(function (j) {
+        return '<li class="item"><span class="item-name">' + esc(j.company) + ' <span class="muted">· ' + esc(j.next || cap(j.status)) +
+          '</span></span><span class="item-value">' + esc(cap(j.when || "")) + "</span></li>";
+      }).join("") + "</ul>";
+    } else {
+      html += '<div class="empty">Nothing tracked yet. Say <b>"add internship: Target, finance intern, apply by Nov 20"</b>.</div>';
+    }
+    html += "</div></div>";
+    document.getElementById("career").innerHTML = html;
+  }
+
+  function renderHealth(data) {
+    var h = data.health || {};
+    var html = head("Health", h.training && h.training.next ? "Next lift: " + cap(h.training.next) : "");
+    var next = (h.appointments || [])[0];
+    if (next) {
+      html += '<div class="figure"><span class="figure-num" style="font-size:24px;letter-spacing:-0.015em">' + esc(next.title) + "</span></div>" +
+        '<div class="figure-note">' + esc(cap(next.when)) + (next.time ? ", " + esc(next.time) : "") + (next.where ? " · " + esc(next.where) : "") + "</div>";
+    } else {
+      html += '<div class="figure-note">' + (h.connected ? "No appointments booked." : "Health not connected yet. /refresh pulls HealthEx on your Mac.") + "</div>";
+    }
+    var vitals = [];
+    if (h.recovery) vitals.push('<span class="pill" data-color="' + esc(h.recovery.color) + '"><i class="dot"></i>Recovery ' + esc(h.recovery.score != null ? h.recovery.score + "%" : cap(h.recovery.color)) + "</span>");
+    if (h.sleep) vitals.push('<span class="pill">Sleep ' + esc(h.sleep.hours) + " h</span>");
+    if (vitals.length) html += '<div class="vitals">' + vitals.join("") + "</div>";
+    var upcoming = (h.appointments || []).slice(1);
+    var due = h.due || [];
+    if (upcoming.length || due.length) {
+      html += '<div class="sub-head">Coming up</div><ul class="list">' +
+        upcoming.map(function (a) {
+          return '<li class="item"><span class="item-name">' + esc(a.title) + '</span><span class="item-value">' + esc(cap(a.when)) + "</span></li>";
+        }).join("") +
+        due.map(function (d) {
+          return '<li class="item"><span class="item-name">' + esc(d.what) + '</span><span class="item-value"' +
+            (d.overdue ? ' style="color:var(--danger-text)"' : "") + ">" + esc(d.detail || (d.overdue ? "Overdue, book it" : "Due soon")) + "</span></li>";
+        }).join("") + "</ul>";
+    }
+    var record = h.record || {};
+    var groups = [["medications", "Medications"], ["conditions", "Conditions"], ["labs", "Recent labs"], ["visits", "Recent visits"]]
+      .filter(function (g) { return (record[g[0]] || []).length; });
+    if (groups.length) {
+      html += "<details><summary>Health record</summary>" + groups.map(function (g) {
+        return '<div class="record-group"><div class="sub-head" style="margin-top:8px">' + g[1] + '</div><ul class="list">' +
+          record[g[0]].map(function (r) {
+            return '<li class="item"><span class="item-name">' + esc(r.name) + '</span><span class="item-value">' + esc(r.detail || "") + "</span></li>";
+          }).join("") + "</ul></div>";
+      }).join("") + "</details>";
+    }
+    if (data.app && data.app.full_health && !groups.length) {
+      html += '<a class="more-link" href="' + esc(data.app.full_health) + '" target="_blank" rel="noopener">Full health record in Claude</a>';
+    }
+    document.getElementById("health").innerHTML = html;
+  }
+
+  function render(data) {
+    renderTop(data); renderToday(data); renderCalendar(data);
+    renderSchool(data); renderCareer(data); renderHealth(data);
+  }
+  window.BVOS_RENDER = render;
+
+  function load() {
+    if (window.BVOS_APP) return;  // the app's unlock script loads and renders the data
+    if (window.BVOS_DATA) { render(window.BVOS_DATA); return; }
+    var key = new URLSearchParams(location.search).get("key");
+    fetch("data.json" + (key ? "?key=" + encodeURIComponent(key) : ""), { cache: "no-store" })
+      .then(function (r) { if (!r.ok) throw new Error(r.status); return r.json(); })
+      .then(render)
+      .catch(function () {
+        document.getElementById("banner").innerHTML = '<div class="banner">Can\'t reach BVOS. Start it with: python3 scripts/dashboard.py serve</div>';
+      });
+  }
+  load();
+  if (!window.BVOS_DATA && !window.BVOS_APP) {
+    setInterval(load, REFRESH_MS);
+    document.addEventListener("visibilitychange", function () { if (!document.hidden) load(); });
+  }
+})();
+</script>
+<script>
+/* BVOS app unlock: asks for the passphrase, decrypts data.enc.json in the browser
+   (PBKDF2-SHA256 + AES-256-GCM, matching scripts/app_build.py) and renders the dashboard.
+   "Remember on this device" keeps the derived key, never the passphrase, in localStorage. */
+(function () {
+  "use strict";
+  var STORE = "bvos-key-v1";
+  var REFRESH_MS = 10 * 60 * 1000;
+  var box = null;
+
+  function b64(s) { return Uint8Array.from(atob(s), function (c) { return c.charCodeAt(0); }); }
+  function toB64(buf) { return btoa(String.fromCharCode.apply(null, new Uint8Array(buf))); }
+
+  function load() {
+    return fetch("data.enc.json?t=" + Date.now(), { cache: "no-store" }).then(function (r) {
+      if (!r.ok) throw new Error("fetch " + r.status);
+      return r.json();
+    });
+  }
+  function keyFrom(pass, b) {
+    return crypto.subtle.importKey("raw", new TextEncoder().encode(pass), "PBKDF2", false, ["deriveBits"])
+      .then(function (base) {
+        return crypto.subtle.deriveBits({ name: "PBKDF2", hash: "SHA-256", salt: b64(b.salt), iterations: b.rounds }, base, 256);
+      });
+  }
+  function open(bits, b) {
+    return crypto.subtle.importKey("raw", bits, "AES-GCM", false, ["decrypt"]).then(function (key) {
+      return crypto.subtle.decrypt({ name: "AES-GCM", iv: b64(b.iv) }, key, b64(b.data));
+    }).then(function (plain) { return JSON.parse(new TextDecoder().decode(plain)); });
+  }
+  function saved() {
+    try { return JSON.parse(localStorage.getItem(STORE) || "null"); } catch (e) { return null; }
+  }
+  function remember(bits, b) {
+    try { localStorage.setItem(STORE, JSON.stringify({ salt: b.salt, rounds: b.rounds, key: toB64(bits) })); } catch (e) { /* private mode */ }
+  }
+  function forget() { try { localStorage.removeItem(STORE); } catch (e) { /* ignore */ } }
+
+  function show(data) {
+    var gate = document.getElementById("gate");
+    if (gate) gate.hidden = true;
+    document.querySelector(".wrap").hidden = false;
+    data.banner = data.app && data.app.problems && data.app.problems.length
+      ? "Some calendars didn't load at the last update (" + data.app.problems.join(", ") + ")." : "";
+    window.BVOS_RENDER(data);
+  }
+
+  // A remembered key only works while the salt matches; each build makes a new salt,
+  // so the key is stored with the salt and re-derived from the passphrase when it changes.
+  function tryRemembered(b) {
+    var s = saved();
+    if (!s || s.salt !== b.salt || s.rounds !== b.rounds) return Promise.reject(new Error("no key"));
+    return open(b64(s.key).buffer, b);
+  }
+
+  function gateUI() {
+    var wrap = document.querySelector(".wrap");
+    wrap.hidden = true;
+    var gate = document.createElement("form");
+    gate.id = "gate";
+    gate.className = "gate";
+    gate.innerHTML =
+      '<div class="gate-card">' +
+      '<div class="mark">BVOS</div>' +
+      '<label class="gate-label" for="pass">Passphrase</label>' +
+      '<input id="pass" class="gate-input" type="password" autocomplete="current-password" required>' +
+      '<label class="gate-check"><input id="keep" type="checkbox" checked> Remember on this device</label>' +
+      '<button class="gate-button" type="submit">Unlock</button>' +
+      '<div class="gate-error" id="gate-error" role="alert"></div>' +
+      "</div>";
+    document.body.insertBefore(gate, wrap);
+    gate.addEventListener("submit", function (ev) {
+      ev.preventDefault();
+      var pass = document.getElementById("pass").value;
+      var err = document.getElementById("gate-error");
+      err.textContent = "Unlocking…";
+      (box ? Promise.resolve(box) : load()).then(function (b) {
+        box = b;
+        return keyFrom(pass, b).then(function (bits) {
+          return open(bits, b).then(function (data) {
+            if (document.getElementById("keep").checked) remember(bits, b); else forget();
+            sessionPass = pass;
+            show(data);
+          });
+        });
+      }).catch(function (e) {
+        err.textContent = /fetch/.test(String(e)) ? "Can't reach BVOS. Check your connection." : "That passphrase didn't work.";
+      });
+    });
+    document.getElementById("pass").focus();
+  }
+
+  var sessionPass = null;
+  function refresh() {
+    load().then(function (b) {
+      if (box && b.data === box.data) return;
+      box = b;
+      return tryRemembered(b).catch(function () {
+        if (!sessionPass) throw new Error("locked");
+        return keyFrom(sessionPass, b).then(function (bits) {
+          if (saved()) remember(bits, b);
+          return open(bits, b);
+        });
+      }).then(show);
+    }).catch(function () { /* keep what's on screen */ });
+  }
+
+  var css = document.createElement("style");
+  css.textContent =
+    ".gate{min-height:100vh;display:grid;place-items:center;padding:24px max(16px,env(safe-area-inset-left,0px))}" +
+    ".gate[hidden]{display:none}" +
+    ".gate-card{width:100%;max-width:340px;background:var(--surface);border-radius:var(--radius);box-shadow:var(--shadow-card);padding:24px;display:grid;gap:12px}" +
+    ".gate-label{font-size:12px;color:var(--text);margin-top:8px}" +
+    ".gate-input{height:40px;border-radius:var(--radius-sm);border:1px solid var(--line);background:var(--well);color:var(--text-strong);padding:0 12px;font:inherit}" +
+    ".gate-input:focus-visible,.gate-button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}" +
+    ".gate-check{display:flex;gap:8px;align-items:center;font-size:13px;color:var(--text)}" +
+    ".gate-button{height:40px;border:0;border-radius:var(--radius-sm);background:var(--text-strong);color:var(--surface);font:600 14px var(--font);cursor:pointer}" +
+    ".gate-error{min-height:18px;font-size:13px;color:var(--danger-text)}";
+  document.head.appendChild(css);
+
+  load().then(function (b) {
+    box = b;
+    return tryRemembered(b).then(show);
+  }).catch(function () {
+    gateUI();
+  });
+  setInterval(refresh, REFRESH_MS);
+  document.addEventListener("visibilitychange", function () { if (!document.hidden) refresh(); });
+})();
+
+</script>
+</body>
+</html>

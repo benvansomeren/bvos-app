@@ -1,1 +1,0 @@
-# bvos-app
