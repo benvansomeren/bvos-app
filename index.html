@@ -483,6 +483,26 @@
   }
   function forget() { try { localStorage.removeItem(STORE); } catch (e) { /* ignore */ } }
 
+  var DRAW_FAILED = "BVOS couldn't show your data. Try again in a few minutes.";
+  function whyFailed(e) {
+    if (e && e.kind === "pass") return "That passphrase didn't work.";
+    if (e && e.kind === "render") return DRAW_FAILED;
+    if (/fetch/.test(String(e && e.message || e))) return "Can't reach BVOS. Check your connection.";
+    return DRAW_FAILED;
+  }
+  // The passphrase was right if we got this far, so a failure here is never blamed on it.
+  function showOrExplain(data) {
+    try {
+      show(data);
+    } catch (e) {
+      console.error("BVOS render failed:", e);
+      var wrap = document.querySelector(".wrap"), gate = document.getElementById("gate");
+      if (wrap) wrap.hidden = true;
+      if (gate) gate.hidden = false;
+      throw { kind: "render" };
+    }
+  }
+
   function show(data) {
     var gate = document.getElementById("gate");
     if (gate) gate.hidden = true;
@@ -524,14 +544,14 @@
       (box ? Promise.resolve(box) : load()).then(function (b) {
         box = b;
         return keyFrom(pass, b).then(function (bits) {
-          return open(bits, b).then(function (data) {
+          return open(bits, b).catch(function () { throw { kind: "pass" }; }).then(function (data) {
             if (document.getElementById("keep").checked) remember(bits, b); else forget();
             sessionPass = pass;
-            show(data);
+            showOrExplain(data);
           });
         });
       }).catch(function (e) {
-        err.textContent = /fetch/.test(String(e)) ? "Can't reach BVOS. Check your connection." : "That passphrase didn't work.";
+        err.textContent = whyFailed(e);
       });
     });
     document.getElementById("pass").focus();
@@ -548,7 +568,7 @@
           if (saved()) remember(bits, b);
           return open(bits, b);
         });
-      }).then(show);
+      }).then(function (data) { try { show(data); } catch (e) { console.error("BVOS render failed:", e); } });
     }).catch(function () { /* keep what's on screen */ });
   }
 
@@ -567,7 +587,15 @@
 
   load().then(function (b) {
     box = b;
-    return tryRemembered(b).then(show);
+    return tryRemembered(b).then(function (data) {
+      try {
+        show(data);
+      } catch (e) {
+        console.error("BVOS render failed:", e);
+        gateUI();
+        document.getElementById("gate-error").textContent = DRAW_FAILED;
+      }
+    });
   }).catch(function () {
     gateUI();
   });
