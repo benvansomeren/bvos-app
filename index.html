@@ -83,6 +83,7 @@
   .status { margin-left: auto; display: flex; gap: 14px; color: var(--text-faint); font-size: 12px; }
   .status span { display: inline-flex; align-items: center; gap: 6px; }
   .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--success); flex: none; }
+  .dot[data-down="true"] { background: var(--danger); }
   .dot[data-stale="true"] { background: var(--warning); }
   .dot[data-missing="true"] { background: var(--ink-2); }
 
@@ -97,6 +98,11 @@
   }
   .today { grid-column: span 2; }
   .calendar { grid-column: 3; grid-row: 1 / span 3; }
+  .board { grid-column: 1 / -1; }
+  .board .item { align-items: flex-start; }
+  .board .item-name { display: flex; align-items: baseline; gap: 8px; flex: 1; }
+  .board .item-name, .board .item-value { min-width: 0; white-space: normal; overflow-wrap: anywhere; }
+  .board .item-value { flex: 1; text-align: right; }
   .career { grid-column: span 2; }
   .career-body { display: grid; grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr); gap: 28px; align-items: start; }
   .career-body .sub-head { margin-top: 0; }
@@ -202,7 +208,7 @@
   @media (max-width: 640px) {
     .wrap { padding: 18px 16px 36px; }
     .grid { grid-template-columns: minmax(0, 1fr); gap: 12px; }
-    .today, .career { grid-column: auto; }
+    .today, .career, .board { grid-column: auto; }
     .career-body { grid-template-columns: minmax(0, 1fr); gap: 0; }
     .career-body .sub-head { margin-top: 18px; }
     .top { flex-wrap: wrap; row-gap: 4px; }
@@ -228,6 +234,7 @@
     <section class="card" id="school"></section>
     <section class="card" id="health"></section>
     <section class="card career" id="career"></section>
+    <section class="card board" id="board"></section>
   </div>
 </div>
 <script>window.BVOS_APP = true;</script>
@@ -421,9 +428,33 @@
     document.getElementById("health").innerHTML = html;
   }
 
+  function renderBoard(data) {
+    var card = document.getElementById("board"), board = data.status;
+    card.hidden = !board;
+    if (!board) { card.innerHTML = ""; return; }
+    var age = (Date.now() - Date.parse(board.checked_utc)) / (60 * 60 * 1000);
+    var rows = board.rows.map(function (row) {
+      if (row.id === "app" && isFinite(age) && age > board.stale_hours) {
+        return { id: row.id, name: row.name, ok: false, detail: "Not updated in " + Math.floor(age) + " hours" };
+      }
+      return row;
+    }).sort(function (a, b) { return Number(a.ok) - Number(b.ok); });
+    var down = rows.filter(function (row) { return !row.ok; });
+    card.innerHTML = head("Status", down.length ? down.length + " down" : "All " + rows.length + " good") +
+      '<ul class="list">' + rows.map(function (row) {
+        return '<li class="item"><span class="item-name"><i class="dot" data-down="' + esc(!row.ok) + '"></i>' +
+          esc(row.name) + '</span><span class="item-value">' + esc(row.detail) + '</span></li>';
+      }).join("") + '</ul>';
+    if (down.length) {
+      var message = down.length + (down.length === 1 ? " connection down: " : " connections down: ") +
+        down.map(function (row) { return row.name; }).join(", ") + ".";
+      document.getElementById("banner").innerHTML += '<div class="banner">' + esc(message) + '</div>';
+    }
+  }
+
   function render(data) {
     renderTop(data); renderToday(data); renderCalendar(data);
-    renderSchool(data); renderCareer(data); renderHealth(data);
+    renderSchool(data); renderCareer(data); renderHealth(data); renderBoard(data);
   }
   window.BVOS_RENDER = render;
 
@@ -507,8 +538,7 @@
     var gate = document.getElementById("gate");
     if (gate) gate.hidden = true;
     document.querySelector(".wrap").hidden = false;
-    data.banner = data.app && data.app.problems && data.app.problems.length
-      ? "Some calendars didn't load at the last update (" + data.app.problems.join(", ") + ")." : "";
+    data.banner = "";
     window.BVOS_RENDER(data);
   }
 
