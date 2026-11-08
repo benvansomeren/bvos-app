@@ -62,7 +62,8 @@ h1 { font-size:34px; line-height:1.2; letter-spacing:-.04em; margin:0; font-weig
 .card-sub,.secondary,.muted,.empty { font-size:13px; color:var(--muted); }
 .metrics { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:12px; grid-column:1 / -1; }
 .metrics.has-weather { grid-template-columns:repeat(4,minmax(0,1fr)); }
-.weather-tile .figure-num { font-size:32px; }
+.weather-tile .figure-num { font-size:32px; display:flex; align-items:center; gap:8px; }
+.weather-tile .weather-icon { width:32px; height:32px; }
 .weather-tile .metric-label { font-size:12px; margin-top:3px; }
 .weather-tile .weather-hilow { font-size:13px; font-weight:600; margin-top:4px; color:var(--text); }
 .weather-tile .weather-marks { font-size:11px; margin-top:4px; color:var(--muted); line-height:1.3; }
@@ -143,6 +144,7 @@ details p { margin:14px 0 0; font-size:13px; color:var(--muted); }
   .metrics.has-weather { grid-template-columns:repeat(2,minmax(0,1fr)); }
   .tile { padding:14px 10px; }
   .figure-num { font-size:30px; }
+  .weather-tile .weather-icon { width:30px; height:30px; }
   .figure-unit { display:block; margin-left:0; }
   .metric-label { font-size:12px; }
   .day { grid-template-columns:minmax(0,1fr); gap:8px; }
@@ -303,26 +305,43 @@ details p { margin:14px 0 0; font-size:13px; color:var(--muted); }
     var w = data.weather;
     var weatherTile = '';
     if (w && w.now && w.day) {
-      var marksHtml = (w.marks && w.marks.length) ? '<div class="weather-marks">' + w.marks.map(function(m) { return esc(m.time || m.label) + ' ' + esc(m.feels) + '°'; }).join(' · ') + '</div>' : '';
+      var marksHtml = (w.marks && w.marks.length) ? '<div class="weather-marks">' + w.marks.map(function(m) { return esc(m.feels) + '° at ' + esc(m.time || m.label); }).join(' · ') + '</div>' : '';
       weatherTile = '<div class="tile weather-tile">' +
-        '<span class="figure-num">' + esc(w.now.temp) + '°</span>' +
+        '<span class="figure-num">' + weatherIcon(w.now.code) + ' ' + esc(w.now.temp) + '°</span>' +
         '<div class="metric-label">Feels like ' + esc(w.now.feels) + '° · ' + esc(w.now.words) + '</div>' +
         '<div class="weather-hilow">' + esc(w.day.high) + '° / ' + esc(w.day.low) + '°</div>' +
         marksHtml +
         '<div class="weather-credit">as of ' + esc(w.as_of) + ' · Open-Meteo.com</div>' +
         '</div>';
     }
+    var dueVal = '–', dueLabel = 'days to next deadline';
+    if (due && due.days != null) {
+      if (due.days === 0) {
+        dueVal = 'Today';
+        dueLabel = 'next deadline due';
+      } else if (due.days === 1) {
+        dueVal = '1';
+        dueLabel = 'day to next deadline';
+      } else {
+        dueVal = due.days;
+        dueLabel = 'days to next deadline';
+      }
+    }
     var html = '<div class="metrics' + (weatherTile ? ' has-weather' : '') + '">' +
       weatherTile +
-      tile(due ? due.days : '–', 'days to next deadline') +
+      tile(dueVal, dueLabel) +
       tile(o.streak || 0, 'day check-in streak') +
       tile(o.inbox || 0, 'inbox items') +
       '</div>';
     var body = '';
     if (items.length) {
       var lead = items[0];
+      var m = /^(.*?)\s*[\(\[]([^\)\]]+)[\)\]]\s*$/.exec(lead.title);
+      var leadTitle = m ? m[1] : lead.title;
+      var note = m ? m[2] : '';
       var redundantDetail = lead.area === 'Plan' && (lead.detail === 'Your #1 priority' || lead.detail === 'Your #1 from last night');
-      body = '<div class="lead"><span class="tag">' + esc(lead.area === 'Plan' ? '#1 priority' : lead.area) + '</span><div class="lead-title">' + esc(lead.title) + '</div>' + (lead.detail && !redundantDetail ? '<div class="secondary">' + esc(lead.detail) + '</div>' : '') + '</div>';
+      var secondaryText = note || (redundantDetail ? '' : lead.detail);
+      body = '<div class="lead"><span class="tag">' + esc(lead.area === 'Plan' ? '#1 priority' : lead.area) + '</span><div class="lead-title">' + esc(leadTitle) + '</div>' + (secondaryText ? '<div class="secondary">' + esc(secondaryText) + '</div>' : '') + '</div>';
       body += '<ul class="rows">' + items.slice(1).map(function (item) { return '<li class="row"><span class="tag">' + esc(item.area) + '</span><span>' + esc(item.title) + '</span><span class="row-detail">' + esc(item.detail) + '</span></li>'; }).join('') + '</ul>';
     } else body = empty('Nothing urgent. Enjoy the space.');
     html += card('Your focus', body, true);
