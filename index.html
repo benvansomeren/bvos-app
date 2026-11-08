@@ -12,467 +12,377 @@
 <meta name="apple-mobile-web-app-title" content="BVOS">
 <meta name="theme-color" content="#f6f5f4">
 <style>
-  :root {
-    --canvas: #f6f5f4;
-    --surface: #ffffff;
-    --well: #f2f1ef;
-    --line: rgba(0, 0, 0, 0.07);
-    --line-faint: rgba(0, 0, 0, 0.045);
-    --ink-1: rgba(0, 0, 0, 0.04);
-    --ink-2: rgba(0, 0, 0, 0.07);
-    --text-strong: #262628;
-    --text: #6f6f73;
-    --text-faint: #9a9a9d;
-    --accent: #3b82f6;
-    --accent-soft: rgba(59, 130, 246, 0.12);
-    --accent-text: #1d5fd1;
-    --success: #22c55e;
-    --success-soft: rgba(34, 197, 94, 0.13);
-    --success-text: #15803d;
-    --warning: #f59e0b;
-    --warning-soft: rgba(245, 158, 11, 0.15);
-    --warning-text: #b45309;
-    --danger: #ef4444;
-    --danger-soft: rgba(239, 68, 68, 0.1);
-    --danger-text: #b91c1c;
-    --notion: #8b8b8f;
-    --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.04), 0 0 0 1px rgba(0, 0, 0, 0.045);
-    --radius: 14px;
-    --radius-sm: 8px;
-    --font: system-ui, -apple-system, "Segoe UI", sans-serif;
-    color-scheme: light;
-  }
-  @media (prefers-color-scheme: dark) {
-    :root:not([data-theme="light"]) {
-      --canvas: #111113; --surface: #1a1a1d; --well: #222226;
-      --line: rgba(255, 255, 255, 0.08); --line-faint: rgba(255, 255, 255, 0.05);
-      --ink-1: rgba(255, 255, 255, 0.05); --ink-2: rgba(255, 255, 255, 0.09);
-      --text-strong: #f2f2f3; --text: #a1a1a6; --text-faint: #75757b;
-      --accent: #5b9bff; --accent-soft: rgba(91, 155, 255, 0.16); --accent-text: #8ab8ff;
-      --success-text: #4ade80; --warning-text: #fbbf24; --danger-text: #f87171;
-      --shadow-card: 0 0 0 1px rgba(255, 255, 255, 0.06);
-      color-scheme: dark;
-    }
-  }
-  :root[data-theme="dark"] {
-    --canvas: #111113; --surface: #1a1a1d; --well: #222226;
-    --line: rgba(255, 255, 255, 0.08); --line-faint: rgba(255, 255, 255, 0.05);
-    --ink-1: rgba(255, 255, 255, 0.05); --ink-2: rgba(255, 255, 255, 0.09);
-    --text-strong: #f2f2f3; --text: #a1a1a6; --text-faint: #75757b;
-    --accent: #5b9bff; --accent-soft: rgba(91, 155, 255, 0.16); --accent-text: #8ab8ff;
-    --success-text: #4ade80; --warning-text: #fbbf24; --danger-text: #f87171;
-    --shadow-card: 0 0 0 1px rgba(255, 255, 255, 0.06);
-    color-scheme: dark;
-  }
-
-  * { box-sizing: border-box; }
-  html, body { margin: 0; }
-  body {
-    background: var(--canvas);
-    color: var(--text-strong);
-    font: 14px/1.4 var(--font);
-    -webkit-font-smoothing: antialiased;
-    font-variant-numeric: tabular-nums;
-  }
-  .wrap { max-width: 1180px; margin: 0 auto; padding: 28px 24px 48px; }
-
-  /* header */
-  .top { display: flex; align-items: baseline; gap: 12px; margin-bottom: 20px; }
-  .mark { font-weight: 650; letter-spacing: -0.01em; font-size: 15px; }
-  .date { color: var(--text); }
-  .status { margin-left: auto; display: flex; gap: 14px; color: var(--text-faint); font-size: 12px; }
-  .status span { display: inline-flex; align-items: center; gap: 6px; }
-  .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--success); flex: none; }
-  .dot[data-down="true"] { background: var(--danger); }
-  .dot[data-stale="true"] { background: var(--warning); }
-  .dot[data-missing="true"] { background: var(--ink-2); }
-
-  /* grid */
-  .grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
-  .card {
-    background: var(--surface);
-    border-radius: var(--radius);
-    box-shadow: var(--shadow-card);
-    padding: 18px 20px 20px;
-    min-width: 0;
-  }
-  .today { grid-column: span 2; }
-  .calendar { grid-column: 3; grid-row: 1 / span 3; }
-  .board { grid-column: 1 / -1; }
-  .board .item { align-items: flex-start; }
-  .board .item-name { display: flex; align-items: baseline; gap: 8px; flex: 1; }
-  .board .item-name, .board .item-value { min-width: 0; white-space: normal; overflow-wrap: anywhere; }
-  .board .item-value { flex: 1; text-align: right; }
-  .career { grid-column: span 2; }
-  .career-body { display: grid; grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr); gap: 28px; align-items: start; }
-  .career-body .sub-head { margin-top: 0; }
-  .card-head { display: flex; align-items: baseline; gap: 8px; margin-bottom: 14px; }
-  .card-title { font-size: 13px; font-weight: 600; color: var(--text-strong); }
-  .card-sub { font-size: 12px; color: var(--text-faint); margin-left: auto; }
-
-  /* today */
-  .lead { padding: 4px 0 18px; border-bottom: 1px solid var(--line-faint); margin-bottom: 6px; }
-  .lead-area { display: inline-flex; margin-bottom: 10px; }
-  .lead-title { font-size: 24px; line-height: 1.25; font-weight: 600; letter-spacing: -0.015em; text-wrap: balance; }
-  .lead-detail { color: var(--text); margin-top: 6px; }
-  .rows { list-style: none; margin: 0; padding: 0; }
-  .row {
-    display: grid; grid-template-columns: 74px minmax(0, 1fr) auto; gap: 12px; align-items: center;
-    padding: 10px 0; border-bottom: 1px solid var(--line-faint);
-  }
-  .row:last-child { border-bottom: 0; padding-bottom: 0; }
-  .row-title { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .row-detail { color: var(--text-faint); font-size: 12px; white-space: nowrap; }
-  .row-detail[data-urgent="true"] { color: var(--danger-text); }
-
-  .tag {
-    display: inline-flex; align-items: center; height: 20px; padding: 0 8px; border-radius: 999px;
-    font-size: 11px; font-weight: 550; justify-self: start;
-    background: var(--ink-1); color: var(--text);
-  }
-  .tag[data-area="School"] { background: var(--accent-soft); color: var(--accent-text); }
-  .tag[data-area="Health"] { background: var(--success-soft); color: var(--success-text); }
-  .tag[data-area="Career"] { background: var(--warning-soft); color: var(--warning-text); }
-
-  /* calendar */
-  .day + .day { margin-top: 16px; }
-  .day-label { font-size: 12px; color: var(--text-faint); margin-bottom: 6px; }
-  .event {
-    display: grid; grid-template-columns: 64px minmax(0, 1fr); gap: 10px;
-    padding: 8px 10px; border-radius: var(--radius-sm); position: relative;
-  }
-  .event + .event { margin-top: 2px; }
-  .event[data-now="true"] { background: var(--well); }
-  .event-time { color: var(--text-faint); font-size: 12px; padding-top: 1px; }
-  .event-title { display: flex; align-items: center; gap: 8px; min-width: 0; }
-  .event-title b { font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .event-where { color: var(--text-faint); font-size: 12px; margin-top: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .src { width: 6px; height: 6px; border-radius: 50%; background: var(--accent); flex: none; }
-  .src[data-source="notion"] { background: var(--notion); }
-  .src[data-source="due"] { background: var(--warning); }
-  .free { color: var(--text-faint); font-size: 12px; padding: 8px 10px; }
-  .legend { display: flex; gap: 14px; margin-top: 18px; padding-top: 14px; border-top: 1px solid var(--line-faint); color: var(--text-faint); font-size: 12px; }
-  .legend span { display: inline-flex; align-items: center; gap: 6px; }
-
-  /* big numbers */
-  .figure { display: flex; align-items: baseline; gap: 8px; margin-bottom: 4px; }
-  .figure-num { font-size: 40px; line-height: 1; font-weight: 600; letter-spacing: -0.03em; }
-  .figure-unit { color: var(--text-faint); }
-  .figure-note { color: var(--text); font-size: 13px; margin-bottom: 16px; }
-  .meter { height: 4px; border-radius: 999px; background: var(--ink-1); overflow: hidden; margin: 12px 0 16px; }
-  .meter i { display: block; height: 100%; border-radius: inherit; background: var(--accent); }
-
-  .list { list-style: none; margin: 0; padding: 0; }
-  .item { display: flex; align-items: baseline; gap: 12px; padding: 8px 0; border-top: 1px solid var(--line-faint); }
-  .item-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .item-value { margin-left: auto; color: var(--text); white-space: nowrap; font-size: 13px; }
-  .item-value strong { color: var(--text-strong); font-weight: 600; margin-left: 6px; }
-  .muted { color: var(--text-faint); }
-  .sub-head { font-size: 12px; color: var(--text-faint); margin: 18px 0 2px; }
-
-  .stages { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin: 4px 0 16px; }
-  .stage { background: var(--well); border-radius: var(--radius-sm); padding: 10px 10px 9px; }
-  .stage b { display: block; font-size: 18px; font-weight: 600; line-height: 1.1; }
-  .stage span { font-size: 11px; color: var(--text-faint); }
-  .stage[data-hot="true"] { background: var(--warning-soft); }
-  .stage[data-hot="true"] span { color: var(--warning-text); }
-
-  .pill { display: inline-flex; align-items: center; gap: 6px; height: 22px; padding: 0 9px; border-radius: 999px; font-size: 12px; font-weight: 550; background: var(--ink-1); color: var(--text); }
-  .pill[data-color="green"] { background: var(--success-soft); color: var(--success-text); }
-  .pill[data-color="yellow"] { background: var(--warning-soft); color: var(--warning-text); }
-  .pill[data-color="red"] { background: var(--danger-soft); color: var(--danger-text); }
-  .pill .dot { background: currentColor; }
-  .vitals { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 4px; }
-
-  details { margin-top: 14px; border-top: 1px solid var(--line-faint); padding-top: 12px; }
-  summary { cursor: pointer; font-size: 12px; color: var(--text); list-style: none; display: flex; align-items: center; gap: 6px; }
-  summary::-webkit-details-marker { display: none; }
-  summary::before { content: ""; width: 6px; height: 6px; border-right: 1.5px solid currentColor; border-bottom: 1.5px solid currentColor; transform: rotate(-45deg); transition: transform .15s; margin-right: 2px; }
-  details[open] summary::before { transform: rotate(45deg); }
-  .record-group + .record-group { margin-top: 10px; }
-
-  .job-link { color: inherit; text-decoration: none; }
-  .job-link:hover, .job-link:focus-visible { text-decoration: underline; }
-  .more-link { display: inline-block; margin-top: 14px; font-size: 12px; color: var(--accent-text); text-decoration: none; }
-  .more-link:hover, .more-link:focus-visible { text-decoration: underline; }
-  .empty { color: var(--text-faint); font-size: 13px; padding: 4px 0; }
-  .empty b { color: var(--text); font-weight: 500; }
-  .banner { background: var(--warning-soft); color: var(--warning-text); border-radius: var(--radius-sm); padding: 10px 12px; font-size: 13px; margin-bottom: 16px; }
-
-  @media (max-width: 960px) {
-    .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-    .today { grid-column: span 2; }
-    .calendar { grid-column: auto; grid-row: auto; }
-    .career { grid-column: span 2; }
-  }
-  @media (max-width: 640px) {
-    .wrap { padding: 18px 16px 36px; }
-    .grid { grid-template-columns: minmax(0, 1fr); gap: 12px; }
-    .today, .career, .board { grid-column: auto; }
-    .career-body { grid-template-columns: minmax(0, 1fr); gap: 0; }
-    .career-body .sub-head { margin-top: 18px; }
-    .top { flex-wrap: wrap; row-gap: 4px; }
-    .status { margin-left: 0; width: 100%; }
-    .lead-title { font-size: 21px; }
-    .row { grid-template-columns: 64px minmax(0, 1fr); }
-    .row-detail { grid-column: 2; margin-top: -6px; }
-  }
-  @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+:root {
+  --canvas:#f5f7fa; --surface:rgba(255,255,255,.68); --solid:#fff; --well:rgba(120,135,155,.08);
+  --text:#1c2430; --muted:#626e7d; --line:rgba(120,135,155,.18); --inner:rgba(255,255,255,.8);
+  --accent:#007aff; --accent-soft:rgba(0,122,255,.1); --green:#24834b; --orange:#a85b00; --red:#c32d36;
+  --red-soft:rgba(210,45,55,.09); --wash:rgba(0,122,255,.09); --shadow:0 8px 32px rgba(30,50,80,.045);
+  --radius:18px; --radius-sm:10px; --shadow-card:var(--shadow); --text-strong:var(--text); --danger-text:var(--red);
+  --font:-apple-system,BlinkMacSystemFont,"SF Pro Text",system-ui,sans-serif;
+  font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text",system-ui,sans-serif; color-scheme:light;
+}
+@media (prefers-color-scheme:dark) {
+  :root { --canvas:#101318; --surface:rgba(30,35,43,.72); --solid:#1e232b; --well:rgba(180,195,215,.07);
+    --text:#f1f4f8; --muted:#a5afbc; --line:rgba(185,200,220,.16); --inner:rgba(255,255,255,.09);
+    --accent:#0a84ff; --accent-soft:rgba(10,132,255,.16); --green:#66d18b; --orange:#ffb457; --red:#ff858d;
+    --red-soft:rgba(255,80,95,.12); --wash:rgba(10,132,255,.07); --shadow:0 8px 32px rgba(0,0,0,.16); color-scheme:dark; }
+}
+* { box-sizing:border-box; }
+body { margin:0; color:var(--text); background:radial-gradient(ellipse at 70% 0,var(--wash),transparent 65%),var(--canvas); font-size:17px; line-height:1.5; min-height:100vh; }
+button,a,summary { -webkit-tap-highlight-color:transparent; }
+button { font:inherit; color:inherit; cursor:pointer; }
+a { color:var(--accent); text-underline-offset:3px; }
+button:active,summary:active,.tap:active { transform:scale(.97); }
+button,summary,.tap { transition:transform 150ms ease-out,background 150ms ease-out; }
+:focus-visible { outline:3px solid var(--accent); outline-offset:4px; }
+[hidden] { display:none !important; }
+.wrap { min-height:100vh; }
+.sidebar,.card,.tile,.tabs { background:var(--surface); border:1px solid var(--inner); box-shadow:var(--shadow); -webkit-backdrop-filter:blur(24px) saturate(180%); backdrop-filter:blur(24px) saturate(180%); }
+.sidebar { position:fixed; inset:0 auto 0 0; width:236px; padding:40px 20px 24px; display:flex; flex-direction:column; border-width:0 1px 0 0; z-index:10; }
+.brand { padding:0 16px; font-size:23px; font-weight:750; letter-spacing:-.05em; }
+.tabs { position:relative; display:flex; flex-direction:column; margin-top:44px; border:0; box-shadow:none; background:transparent; border-radius:12px; }
+.tab { position:relative; z-index:1; display:flex; align-items:center; gap:12px; width:100%; height:50px; padding:0 16px; border:0; border-radius:12px; background:transparent; text-align:left; color:var(--muted); font-size:15px; font-weight:550; }
+.tab[aria-selected="true"] { color:var(--accent); }
+.tab:hover { background:var(--well); }
+.tab svg { width:21px; height:21px; fill:none; stroke:currentColor; stroke-width:1.7; stroke-linecap:round; stroke-linejoin:round; flex:none; }
+#tab-marker { position:absolute; left:0; top:0; width:100%; height:50px; background:var(--accent-soft); border-radius:12px; transform:translateY(calc(var(--index,0) * 50px)); transition:transform 250ms ease-in-out; pointer-events:none; }
+.sidebar-footer { margin-top:auto; padding:28px 16px 0; color:var(--muted); font-size:13px; }
+#status { margin-top:6px; }
+main { margin-left:236px; padding:48px clamp(24px,4vw,64px) 64px; max-width:1600px; }
+.page-head { margin-bottom:28px; }
+h1 { font-size:34px; line-height:1.2; letter-spacing:-.04em; margin:0; font-weight:750; }
+.panels { display:grid; align-items:start; }
+.panel { grid-area:1 / 1; min-width:0; }
+.panel.leaving { pointer-events:none; }
+.content-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:18px; }
+.card { border-radius:18px; padding:24px; min-width:0; overflow-wrap:anywhere; }
+.wide { grid-column:1 / -1; }
+.card-head { display:flex; align-items:baseline; justify-content:space-between; gap:12px; margin-bottom:20px; }
+.card-title { font-size:17px; font-weight:650; }
+.card-sub,.secondary,.muted,.empty { font-size:13px; color:var(--muted); }
+.metrics { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:12px; grid-column:1 / -1; }
+.tile { border-radius:18px; padding:20px; min-width:0; overflow-wrap:anywhere; }
+.figure-num { font-size:38px; font-weight:700; letter-spacing:-.05em; line-height:1.2; }
+.figure-unit { font-size:13px; color:var(--muted); margin-left:6px; }
+.metric-label { display:block; margin-top:6px; color:var(--muted); font-size:13px; }
+.lead { padding:4px 0 18px; }
+.lead-title { font-size:26px; line-height:1.3; font-weight:650; letter-spacing:-.025em; margin:10px 0; }
+.tag { color:var(--accent); font-size:13px; font-weight:550; }
+.rows,.list { list-style:none; padding:0; margin:0; }
+.item,.row { padding:14px 0; border-top:1px solid var(--line); }
+.item { display:flex; justify-content:space-between; gap:16px; align-items:baseline; }
+.item-name { min-width:0; }
+.item-value { color:var(--muted); font-size:13px; text-align:right; }
+.row { display:grid; grid-template-columns:70px minmax(0,1fr); gap:4px 16px; }
+.row-detail { grid-column:2; font-size:13px; color:var(--muted); }
+.sub-head { font-size:13px; font-weight:550; color:var(--muted); margin:20px 0 10px; }
+.grade { padding:14px 0; border-top:1px solid var(--line); }
+.grade-label { display:flex; justify-content:space-between; gap:16px; margin-bottom:10px; }
+.grade-bar { height:6px; border-radius:9px; background:var(--well); overflow:hidden; }
+.grade-bar i { display:block; height:100%; background:var(--accent); border-radius:inherit; }
+.day { display:grid; grid-template-columns:120px minmax(0,1fr); gap:18px; padding:18px 0; border-top:1px solid var(--line); }
+.day-label { font-weight:600; font-size:13px; }
+.event { display:grid; grid-template-columns:80px minmax(0,1fr); gap:12px; padding:6px 0; }
+.event-time,.event-where { color:var(--muted); font-size:13px; }
+.event-title { font-weight:500; }
+.free { color:var(--muted); font-size:13px; padding:6px 0; }
+.stages { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:8px; }
+.stage { background:var(--well); padding:12px 8px; border-radius:12px; text-align:center; }
+.stage b { display:block; font-size:24px; }
+.stage span { font-size:13px; color:var(--muted); }
+.dot { display:inline-block; width:8px; height:8px; border-radius:50%; background:var(--green); margin-right:10px; flex:none; }
+.dot[data-down="true"] { background:var(--red); }
+.banner { padding:14px 18px; border-radius:14px; margin-bottom:24px; background:var(--well); font-size:13px; }
+button.banner { display:block; width:100%; text-align:left; border:1px solid var(--red); background:var(--red-soft); color:var(--red); }
+.deadline[data-today="true"] { border-left:3px solid var(--orange); padding-left:14px; }
+.deadline[data-today="true"] summary { color:var(--orange); }
+details { border-top:1px solid var(--line); padding:16px 0; }
+summary { cursor:pointer; font-size:17px; font-weight:550; }
+summary span { display:block; color:var(--muted); font-size:13px; font-weight:400; margin-top:4px; }
+details p { margin:14px 0 0; font-size:13px; color:var(--muted); }
+.apply { display:inline-block; text-decoration:none; background:var(--accent-soft); border-radius:10px; padding:8px 14px; margin-top:14px; font-size:13px; font-weight:600; }
+.rotation { display:flex; gap:8px; flex-wrap:wrap; margin-top:24px; }
+.rotation span { border-radius:12px; background:var(--well); padding:10px 16px; font-size:13px; }
+.rotation .next { background:var(--accent-soft); color:var(--accent); }
+@keyframes enter { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:none; } }
+.panel.entering .card,.panel.entering .tile { animation:enter 280ms ease-out both; animation-delay:calc(var(--order,0) * 30ms); }
+@keyframes green-pulse { 50% { background:rgba(60,190,100,.16); } }
+.turned-green { animation:green-pulse 650ms ease-out 1; }
+@supports not ((backdrop-filter:blur(24px)) or (-webkit-backdrop-filter:blur(24px))) {
+  .sidebar,.card,.tile,.tabs { background:var(--solid); }
+}
+@media (min-width:900px) {
+  body { height:100vh; height:100dvh; overflow:hidden; }
+  .sidebar { height:100vh; height:100dvh; }
+  main { height:100vh; height:100dvh; overflow-y:auto; }
+}
+@media (max-width:899px) {
+  .sidebar { position:static; width:auto; padding:22px 20px 0; border:0; background:transparent; box-shadow:none; backdrop-filter:none; -webkit-backdrop-filter:none; }
+  .brand { padding:0; font-size:20px; }
+  .sidebar-footer { position:absolute; right:20px; top:23px; padding:0; margin:0; text-align:right; font-size:13px; }
+  #date { display:none; }
+  #status { margin:0; }
+  /* The static phone sidebar cannot lift its fixed tabs above glass cards. */
+  .tabs { position:fixed; z-index:10; bottom:calc(12px + env(safe-area-inset-bottom,0px)); left:12px; right:12px; flex-direction:row; margin:0; padding:5px; border:1px solid var(--inner); border-radius:22px; background:var(--surface); box-shadow:var(--shadow); }
+  .tab { flex:1; width:0; height:58px; padding:5px 0; flex-direction:column; justify-content:center; gap:3px; font-size:10px; border-radius:17px; }
+  #tab-marker { left:5px; top:5px; width:calc((100% - 10px) / 6); height:58px; transform:translateX(calc(var(--index,0) * 100%)); border-radius:17px; }
+  main { margin:0; padding:32px 20px calc(112px + env(safe-area-inset-bottom,0px)); }
+  h1 { font-size:28px; }
+  .page-head { margin-bottom:24px; }
+  .content-grid { grid-template-columns:minmax(0,1fr); gap:14px; }
+  .card { padding:20px; }
+  .metrics { gap:8px; }
+  .tile { padding:14px 10px; }
+  .figure-num { font-size:30px; }
+  .figure-unit { display:block; margin-left:0; }
+  .metric-label { font-size:12px; }
+  .day { grid-template-columns:minmax(0,1fr); gap:8px; }
+  .item { flex-wrap:wrap; gap:4px 12px; }
+  .item-value { text-align:left; }
+  .lead-title { font-size:23px; }
+}
+@media (prefers-reduced-motion:reduce) {
+  *,*::before,*::after { animation:none !important; transition:none !important; scroll-behavior:auto !important; }
+  ::view-transition-old(root),::view-transition-new(root) { animation:none !important; }
+}
 </style>
 </head>
 <body>
 <div class="wrap">
-  <div class="top">
-    <div class="mark">BVOS</div>
-    <div class="date" id="date"></div>
-    <div class="status" id="status"></div>
-  </div>
-  <div id="banner"></div>
-  <div class="grid">
-    <section class="card today" id="today"></section>
-    <section class="card calendar" id="calendar"></section>
-    <section class="card" id="school"></section>
-    <section class="card" id="health"></section>
-    <section class="card career" id="career"></section>
-    <section class="card board" id="board"></section>
-  </div>
+  <aside class="sidebar" aria-label="BVOS navigation">
+    <div class="brand">BVOS</div>
+    <div class="tabs" id="tablist" role="tablist" aria-label="Life areas" aria-orientation="vertical">
+      <div id="tab-marker" aria-hidden="true"></div>
+      <button class="tab" id="tab-today" role="tab" data-tab="today" aria-controls="panel-today" aria-selected="true" tabindex="0"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M2 12h2m16 0h2M5 5l1.5 1.5m11 11L19 19M5 19l1.5-1.5m11-11L19 5"/></svg><span>Today</span></button>
+      <button class="tab" id="tab-school" role="tab" data-tab="school" aria-controls="panel-school" aria-selected="false" tabindex="-1"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 4h7l2 2 2-2h7v15h-7l-2 2-2-2H3zM12 6v15"/></svg><span>School</span></button>
+      <button class="tab" id="tab-career" role="tab" data-tab="career" aria-controls="panel-career" aria-selected="false" tabindex="-1"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="7" width="18" height="14" rx="3"/><path d="M8 7V3h8v4M3 12l9 3 9-3M10 14v3h4v-3"/></svg><span>Career</span></button>
+      <button class="tab" id="tab-health" role="tab" data-tab="health" aria-controls="panel-health" aria-selected="false" tabindex="-1"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21C-5 10 5-2 12 7c7-9 17 3 0 14z"/></svg><span>Health</span></button>
+      <button class="tab" id="tab-calendar" role="tab" data-tab="calendar" aria-controls="panel-calendar" aria-selected="false" tabindex="-1"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M7 3v4m10-4v4M3 10h18M7 14h3m4 0h3m-10 4h3"/></svg><span>Calendar</span></button>
+      <button class="tab" id="tab-system" role="tab" data-tab="system" aria-controls="panel-system" aria-selected="false" tabindex="-1"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="18" height="7" rx="2"/><rect x="3" y="14" width="18" height="7" rx="2"/><path d="M7 6.5h.01M7 17.5h.01M12 6.5h5M12 17.5h5"/></svg><span>System</span></button>
+    </div>
+    <div class="sidebar-footer"><div id="date"></div><div id="status" aria-live="polite"></div></div>
+  </aside>
+  <main>
+    <div id="banner" aria-live="polite"></div>
+    <div class="panels">
+      <section class="panel" id="panel-today" role="tabpanel" aria-labelledby="tab-today" tabindex="0"><header class="page-head"><h1>Today</h1></header><div class="content-grid" id="today"></div></section>
+      <section class="panel" id="panel-school" role="tabpanel" aria-labelledby="tab-school" tabindex="0" hidden><header class="page-head"><h1>School</h1></header><div class="content-grid" id="school"></div></section>
+      <section class="panel" id="panel-career" role="tabpanel" aria-labelledby="tab-career" tabindex="0" hidden><header class="page-head"><h1>Career</h1></header><div class="content-grid" id="career"></div></section>
+      <section class="panel" id="panel-health" role="tabpanel" aria-labelledby="tab-health" tabindex="0" hidden><header class="page-head"><h1>Health</h1></header><div class="content-grid" id="health"></div></section>
+      <section class="panel" id="panel-calendar" role="tabpanel" aria-labelledby="tab-calendar" tabindex="0" hidden><header class="page-head"><h1>Calendar</h1></header><div class="content-grid" id="calendar"></div></section>
+      <section class="panel" id="panel-system" role="tabpanel" aria-labelledby="tab-system" tabindex="0" hidden><header class="page-head"><h1>System</h1></header><div class="card board" id="board"></div></section>
+    </div>
+  </main>
 </div>
 <script>window.BVOS_APP = true;</script>
 <script>
 (function () {
   "use strict";
   var REFRESH_MS = 5 * 60 * 1000;
-
+  var areas = ["today", "school", "career", "health", "calendar", "system"];
+  var active = null, previousStatus = {};
   function esc(text) {
     return String(text == null ? "" : text).replace(/[&<>"']/g, function (c) {
-      return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
+      return {"&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;", "'":"&#39;"}[c];
     });
   }
-  function head(title, sub) {
-    return '<div class="card-head"><div class="card-title">' + esc(title) + "</div>" +
-      (sub ? '<div class="card-sub">' + esc(sub) + "</div>" : "") + "</div>";
+  function cap(s) { return s ? s.charAt(0).toUpperCase() + s.slice(1) : ""; }
+  function head(title, sub) { return '<div class="card-head"><div class="card-title">' + esc(title) + '</div>' + (sub ? '<div class="card-sub">' + esc(sub) + '</div>' : '') + '</div>'; }
+  function card(title, body, wide, sub) { return '<article class="card' + (wide ? ' wide' : '') + '">' + head(title, sub) + body + '</article>'; }
+  function tile(value, label, unit) { return '<div class="tile"><span class="figure-num">' + esc(value) + '</span>' + (unit ? '<span class="figure-unit">' + esc(unit) + '</span>' : '') + '<span class="metric-label">' + esc(label) + '</span></div>'; }
+  function empty(text) { return '<p class="empty">' + esc(text) + '</p>'; }
+  var motionPreference = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)');
+  function reduced() { return !motionPreference || motionPreference.matches; }
+  function activate(id, focus, writeHash) {
+    if (areas.indexOf(id) < 0) id = 'today';
+    var old = active;
+    active = id;
+    areas.forEach(function (area, index) {
+      var tab = document.getElementById('tab-' + area), panel = document.getElementById('panel-' + area);
+      if (!tab || !panel) return;
+      // A new selection supersedes old fades, including when motion is disabled.
+      if (panel.getAnimations) panel.getAnimations().forEach(function (animation) { animation.cancel(); });
+      panel.classList.remove('leaving');
+      var selected = area === id;
+      tab.setAttribute('aria-selected', selected);
+      tab.setAttribute('tabindex', selected ? '0' : '-1');
+      panel.setAttribute('aria-hidden', !selected);
+      panel.inert = !selected;
+      panel.classList.remove('entering');
+      if (selected) {
+        panel.hidden = false;
+        if (old !== id) {
+          panel.classList.add('entering');
+          if (panel.animate && !reduced()) panel.animate([{opacity:0}, {opacity:1}], {duration:250, easing:'ease-in-out'}).finished.catch(function () { /* Superseded fade. */ });
+        }
+        if (focus) tab.focus();
+        document.getElementById('tab-marker').style.setProperty('--index', index);
+      } else if (area === old && old !== id && panel.animate && !reduced()) {
+        panel.classList.add('leaving');
+        panel.animate([{opacity:1}, {opacity:0}], {duration:200, easing:'ease-in-out'}).finished.then(function () {
+          if (active !== area) panel.hidden = true;
+          panel.classList.remove('leaving');
+        }, function () { /* The next activation already settled this panel. */ });
+      } else panel.hidden = true;
+    });
+    if (writeHash && location.hash !== '#' + id) history.pushState(null, '', '#' + id);
+    try { localStorage.setItem('bvos-tab', id); } catch (_) { /* Storage can be blocked. */ }
+  }
+  function navigation() {
+    var list = document.getElementById('tablist');
+    if (!list) return;
+    function orientation() { list.setAttribute('aria-orientation', window.matchMedia('(min-width: 900px)').matches ? 'vertical' : 'horizontal'); }
+    orientation(); window.addEventListener('resize', orientation);
+    areas.forEach(function (id, index) {
+      var tab = document.getElementById('tab-' + id);
+      tab.addEventListener('click', function () { activate(id, false, true); });
+      tab.addEventListener('keydown', function (event) {
+        var next;
+        if (event.key === 'ArrowRight' || event.key === 'ArrowDown') next = (index + 1) % 6;
+        if (event.key === 'ArrowLeft' || event.key === 'ArrowUp') next = (index + 5) % 6;
+        if (event.key === 'Home') next = 0;
+        if (event.key === 'End') next = 5;
+        if (next != null) { event.preventDefault(); activate(areas[next], true, true); }
+      });
+    });
+    function fromHash() { activate(location.hash.slice(1).toLowerCase(), false, false); }
+    window.addEventListener('hashchange', fromHash);
+    window.addEventListener('popstate', fromHash);
+    fromHash();
+    if (motionPreference && motionPreference.addEventListener) motionPreference.addEventListener('change', function () {
+      if (reduced()) activate(active, false, false);
+    });
+    document.addEventListener('click', function (event) {
+      if (event.target.closest('[data-system]')) activate('system', true, true);
+      var summary = event.target.closest('details[data-expand] > summary');
+      if (!summary || !document.startViewTransition || reduced()) return;
+      event.preventDefault();
+      var details = summary.parentElement;
+      document.startViewTransition(function () { details.open = !details.open; });
+    });
   }
   function clock(iso) {
-    if (!iso) return "never";
+    if (!iso) return 'waiting for data';
+    // Offset-free timestamps are already Chicago wall time. UTC timestamps are converted explicitly.
+    var m = /T(\d{2}):(\d{2})$/.exec(iso);
+    if (m) return (Number(m[1]) % 12 || 12) + ':' + m[2] + (Number(m[1]) < 12 ? ' am' : ' pm');
     var d = new Date(iso);
-    if (isNaN(d)) return iso;
-    var h = d.getHours() % 12 || 12, m = d.getMinutes();
-    return h + (m ? ":" + String(m).padStart(2, "0") : "") + (d.getHours() < 12 ? " am" : " pm");
+    return isNaN(d) ? 'waiting for data' : d.toLocaleTimeString('en-US', {timeZone:'America/Chicago', hour:'numeric', minute:'2-digit'});
   }
-  function cap(s) { return s ? s.charAt(0).toUpperCase() + s.slice(1) : ""; }
-
   function renderTop(data) {
-    var parts = (data.now || "").split(",");
-    document.getElementById("date").textContent = parts[0] || "";
-    var s = data.sources || {};
-    document.getElementById("status").innerHTML = ["calendar", "health"].map(function (k) {
-      var info = s[k] || {};
-      var label = info.updated ? cap(k) + " · " + clock(info.updated) : cap(k) + " · not connected";
-      return '<span><i class="dot" data-stale="' + !!info.stale + '" data-missing="' + !info.updated + '"></i>' + esc(label) + "</span>";
-    }).join("");
-    var missing = ["calendar", "health"].filter(function (k) { return !(s[k] || {}).updated; });
-    var note = data.banner != null ? data.banner
-      : (missing.length ? esc(cap(missing.join(" and "))) + " not connected yet." : "");
-    document.getElementById("banner").innerHTML = note ? '<div class="banner">' + note + "</div>" : "";
+    document.getElementById('date').textContent = (data.now || '').split(',')[0];
+    document.getElementById('status').textContent = 'Updated ' + clock(data.generated);
+    document.getElementById('banner').innerHTML = data.banner ? '<div class="banner">' + esc(data.banner) + '</div>' : '';
   }
-
+  function eventRows(events) {
+    return events.length ? events.map(function (e) {
+      return '<div class="event"><div class="event-time">' + esc(e.time) + '</div><div><div class="event-title">' + esc(e.title) + '</div>' + (e.where ? '<div class="event-where">' + esc(e.where) + '</div>' : '') + '</div></div>';
+    }).join('') : '<div class="free">Nothing scheduled</div>';
+  }
   function renderToday(data) {
-    var items = data.today || [];
-    var html = head("Today", items.length ? items.length + " things" : "");
-    if (!items.length) {
-      html += '<div class="empty">Nothing urgent. Enjoy it.</div>';
-    } else {
+    var o = data.overview || {}, due = o.next_deadline, items = (data.today || []).slice();
+    items.sort(function (a,b) { return Number(b.area === 'Plan') - Number(a.area === 'Plan'); });
+    var html = '<div class="metrics">' + tile(due ? due.days : '–', 'days to next deadline') + tile(o.streak || 0, 'day check-in streak') + tile(o.inbox || 0, 'inbox items') + '</div>';
+    var body = '';
+    if (items.length) {
       var lead = items[0];
-      html += '<div class="lead"><span class="tag lead-area" data-area="' + esc(lead.area) + '">' + esc(lead.area) + "</span>" +
-        '<div class="lead-title">' + esc(lead.title) + "</div>" +
-        '<div class="lead-detail">' + esc(lead.detail) + "</div></div>";
-      html += '<ul class="rows">' + items.slice(1).map(function (it) {
-        return '<li class="row"><span class="tag" data-area="' + esc(it.area) + '">' + esc(it.area) + "</span>" +
-          '<span class="row-title">' + esc(it.title) + "</span>" +
-          '<span class="row-detail" data-urgent="' + (it.rank === 0) + '">' + esc(it.detail) + "</span></li>";
-      }).join("") + "</ul>";
-    }
-    document.getElementById("today").innerHTML = html;
+      var redundantDetail = lead.area === 'Plan' && (lead.detail === 'Your #1 priority' || lead.detail === 'Your #1 from last night');
+      body = '<div class="lead"><span class="tag">' + esc(lead.area === 'Plan' ? '#1 priority' : lead.area) + '</span><div class="lead-title">' + esc(lead.title) + '</div>' + (lead.detail && !redundantDetail ? '<div class="secondary">' + esc(lead.detail) + '</div>' : '') + '</div>';
+      body += '<ul class="rows">' + items.slice(1).map(function (item) { return '<li class="row"><span class="tag">' + esc(item.area) + '</span><span>' + esc(item.title) + '</span><span class="row-detail">' + esc(item.detail) + '</span></li>'; }).join('') + '</ul>';
+    } else body = empty('Nothing urgent. Enjoy the space.');
+    html += card('Your focus', body, true);
+    if ((o.plan || []).length) html += card('The plan', '<ul class="list">' + o.plan.map(function (line) { return '<li class="item">' + esc(line) + '</li>'; }).join('') + '</ul>');
+    html += card('Next deadline', due ? '<details data-expand><summary>' + esc(due.what) + '<span>' + esc(due.days === 0 ? 'Due today' : 'In ' + due.days + ' days') + '</span></summary><p>' + esc(due.date) + '</p></details>' : empty('No upcoming deadlines.'));
+    var training = (data.health || {}).training || {};
+    html += card('Training', '<div class="figure-num">' + esc(cap(training.next || 'rest')) + '</div><p class="secondary">Next in your rotation</p>');
+    html += card('Today’s events', eventRows(((data.calendar || [])[0] || {}).events || []), true);
+    document.getElementById('today').innerHTML = html;
   }
-
+  function dayGap(a,b) { return Math.round((Date.parse(b + 'T12:00:00Z') - Date.parse(a + 'T12:00:00Z')) / 86400000); }
+  function renderSchool(data) {
+    var s = data.school || {}, today = ((data.calendar || [])[0] || {}).date || (data.generated || '').slice(0,10);
+    var due = (s.upcoming || []).filter(function (u) { var gap = dayGap(today, u.date); return gap >= 0 && gap < 14; }).sort(function(a,b) {return a.date.localeCompare(b.date);});
+    var html = '<div class="metrics">' + tile(s.gpa == null ? '–' : s.gpa.toFixed(2), 'current GPA', '/ 4.00') + tile(due.length, 'deadlines in 14 days') + tile((s.classes || []).length, 'classes') + '</div>';
+    html += card('Class progress', (s.classes || []).map(function (c) {
+      return '<div class="grade"><div class="grade-label"><span>' + esc(c.code) + '</span><span class="secondary">' + (c.pct == null ? 'No grades yet' : esc(c.pct.toFixed(1) + '% · ' + c.letter)) + '</span></div><div class="grade-bar" role="meter" aria-label="' + esc(c.code) + ' grade" aria-valuemin="0" aria-valuemax="100" aria-valuenow="' + (c.pct == null ? 0 : Math.max(0,Math.min(100,c.pct))) + '"><i style="width:' + Math.max(0,Math.min(100,Number(c.pct) || 0)) + '%"></i></div></div>';
+    }).join('') || empty('Grades will appear here.'));
+    html += card('Coming up', due.map(function(u) { return '<details class="deadline" data-expand data-today="' + (u.date === today) + '"><summary>' + esc(u.what) + '<span>' + esc(cap(u.when)) + '</span></summary><p>' + esc(u.date) + (u.detail ? ' · ' + esc(u.detail) : '') + '</p></details>'; }).join('') || empty('No deadlines in the next 14 days.'));
+    var plans = (s.plans || []).map(function(plan) { return '<details data-expand><summary>' + esc(plan.title) + '<span>' + esc(plan.date) + '</span></summary>' + (plan.blocks || []).map(function(block) {return '<p>' + esc(block.date) + ' · ' + esc(block.what) + '</p>';}).join('') + '</details>'; }).join('');
+    html += card('Exam plans', plans || (s.study || []).map(function(block) { return '<p>' + esc(block) + '</p>'; }).join('') || empty('No upcoming study plans.'), true);
+    document.getElementById('school').innerHTML = html;
+  }
+  function safeLink(value) { try { var url = new URL(value); return /^https?:$/.test(url.protocol) ? url.href : ''; } catch (_) { return ''; } }
+  function renderCareer(data) {
+    var c = data.career || {}, counts = c.counts || {}, feed = c.feed || [];
+    var html = '<div class="metrics">' + tile(c.feed_new || 0, 'new internships') + tile(counts.applied || 0, 'applications') + tile(counts.interview || 0, 'interviews') + '</div>';
+    html += feed.map(function(f) {
+      var url = safeLink(f.url);
+      return '<article class="card internship">' + head(f.company, 'New internship') + '<details data-expand><summary>' + esc(f.title) + '<span>' + esc(f.location || 'Location not listed') + ' · ' + (f.posted ? 'Posted ' : 'First seen ') + esc(f.posted || f.first_seen || f.when || 'date not listed') + '</span></summary><p>' + esc(f.detail || 'Open the posting to see the role and application requirements.') + '</p>' + (url ? '<a class="apply tap" target="_blank" rel="noopener noreferrer" href="' + esc(url) + '">Apply <span aria-hidden="true">↗</span></a>' : '<p>Posting link unavailable</p>') + '</details></article>';
+    }).join('') || card('New internships', empty('New matches land here after the next feed update.'), true);
+    var pipeline = '<div class="stages">' + ['saved','applied','interview','offer'].map(function(k) {return '<div class="stage"><b>' + esc(counts[k] || 0) + '</b><span>' + cap(k) + '</span></div>';}).join('') + '</div>';
+    pipeline += '<ul class="list">' + (c.active || []).map(function(j) {return '<li class="item"><div class="item-name">' + esc(j.company) + '<div class="secondary">' + esc(j.role) + ' · ' + esc(j.next || cap(j.status)) + '</div></div><span class="item-value">' + esc(cap(j.when || '')) + '</span></li>';}).join('') + '</ul>';
+    html += card('Your pipeline', pipeline, true);
+    document.getElementById('career').innerHTML = html;
+  }
+  function renderHealth(data) {
+    var h = data.health || {}, training = h.training || {};
+    var html = card('Training', '<div class="figure-num">' + esc(cap(training.next || 'rest')) + '</div><p class="secondary">Next lift' + (training.last ? ' · Last: ' + esc(cap(training.last)) : '') + '</p><div class="rotation">' + ['push','pull','legs'].map(function(k) {return '<span class="' + (training.next === k ? 'next' : '') + '">' + cap(k) + '</span>';}).join('') + '</div>', true);
+    // App data contains training only; never create its Mac-only sections in the DOM.
+    if (!data.app && ('appointments' in h || 'health_notes' in data)) {
+      if (h.recovery || h.sleep) html += card('Daily check', (h.recovery ? '<p>Recovery · ' + esc(h.recovery.score == null ? cap(h.recovery.color) : h.recovery.score + '%') + '</p>' : '') + (h.sleep ? '<p>Sleep · ' + esc(h.sleep.hours) + ' h</p>' : ''), true);
+      html += card('Appointments', (h.appointments || []).map(function(a) {return '<div class="item"><span>' + esc(a.title) + '</span><span class="item-value">' + esc(cap(a.when)) + (a.time ? ', ' + esc(a.time) : '') + (a.where ? ' · ' + esc(a.where) : '') + '</span></div>';}).join('') || empty('No upcoming appointments.'));
+      html += card('Care due', (h.due || []).map(function(d) {return '<div class="item"><span>' + esc(d.what) + '</span><span class="item-value">' + esc(d.detail || (d.overdue ? 'Overdue' : 'Due soon')) + '</span></div>';}).join('') || empty('Nothing due.'));
+      (data.health_notes || []).forEach(function(group) {html += card(group.heading, '<ul class="list">' + group.items.map(function(item) {return '<li class="item">' + esc(item) + '</li>';}).join('') + '</ul>');});
+      var record = h.record || {};
+      var groups = [['medications','Medications'],['conditions','Conditions'],['labs','Recent labs'],['visits','Recent visits']];
+      var entries = groups.filter(function(g) {return (record[g[0]] || []).length;}).map(function(g) {return '<details data-expand><summary>' + g[1] + '</summary>' + record[g[0]].map(function(r) {return '<p>' + esc(r.name) + ' · ' + esc(r.detail) + '</p>';}).join('') + '</details>';}).join('');
+      if (entries) html += card('Health record', entries, true);
+    }
+    document.getElementById('health').innerHTML = html;
+  }
   function renderCalendar(data) {
     var days = data.calendar || [];
-    var connected = (data.sources || {}).calendar && data.sources.calendar.updated;
-    var html = head("Calendar", "Next " + days.length + " days");
-    if (!connected) {
-      html += '<div class="empty"><b>Not connected yet.</b> /refresh pulls Google and Notion Calendar.</div>';
-    }
-    var now = new Date();
-    html += days.map(function (day, i) {
-      var events = day.events || [];
-      return '<div class="day"><div class="day-label">' + esc(day.label) + "</div>" +
-        (events.length ? events.map(function (e) {
-          return '<div class="event" data-now="' + (i === 0 && e === nextEvent(events, now)) + '">' +
-            '<div class="event-time">' + esc(e.time) + "</div>" +
-            '<div><div class="event-title"><i class="src" data-source="' + esc(e.source) + '"></i><b>' + esc(e.title) + "</b></div>" +
-            (e.where ? '<div class="event-where">' + esc(e.where) + "</div>" : "") + "</div></div>";
-        }).join("") : (connected ? '<div class="free">Nothing scheduled</div>' : "")) + "</div>";
-    }).join("");
-    html += '<div class="legend"><span><i class="src"></i>Events</span><span><i class="src" data-source="due"></i>Due dates</span><span><i class="src" data-source="notion"></i>Other</span></div>';
-    document.getElementById("calendar").innerHTML = html;
+    document.getElementById('calendar').innerHTML = card('Your week', days.map(function(day) {return '<div class="day"><div class="day-label">' + esc(day.label) + '</div><div>' + eventRows(day.events || []) + '</div></div>';}).join('') || empty('Calendar not connected yet.'), true, 'Next ' + days.length + ' days');
   }
-  function nextEvent(events, now) {
-    var mins = now.getHours() * 60 + now.getMinutes();
-    for (var i = 0; i < events.length; i++) {
-      var m = /^(\d+)(?::(\d+))?\s*(am|pm)$/.exec(events[i].end || events[i].time || "");
-      if (!m) continue;
-      var t = (parseInt(m[1], 10) % 12 + (m[3] === "pm" ? 12 : 0)) * 60 + parseInt(m[2] || "0", 10);
-      if (t > mins) return events[i];
-    }
-    return null;
-  }
-
-  function renderSchool(data) {
-    var s = data.school || {};
-    var html = head("School", "Goal " + (s.goal || 4).toFixed(2));
-    if (s.gpa != null) {
-      html += '<div class="figure"><span class="figure-num">' + s.gpa.toFixed(2) + '</span><span class="figure-unit">GPA</span></div>' +
-        '<div class="meter"><i style="width:' + Math.min(100, (s.gpa / (s.goal || 4)) * 100) + '%"></i></div>';
-    } else {
-      html += '<div class="figure"><span class="figure-num muted">–</span><span class="figure-unit">GPA</span></div>' +
-        '<div class="figure-note">Waiting on grades.</div>';
-    }
-    if ((s.classes || []).length) {
-      html += '<ul class="list">' + s.classes.map(function (c) {
-        return '<li class="item"><span class="item-name">' + esc(c.code) + '</span><span class="item-value">' +
-          (c.pct != null ? c.pct.toFixed(1) + "%<strong>" + esc(c.letter) + "</strong>" : '<span class="muted">No grades yet</span>') +
-          "</span></li>";
-      }).join("") + "</ul>";
-    }
-    if ((s.upcoming || []).length) {
-      html += '<div class="sub-head">Coming up</div><ul class="list">' + s.upcoming.slice(0, 5).map(function (u) {
-        return '<li class="item"><span class="item-name">' + esc(u.what) + '</span><span class="item-value">' + esc(cap(u.when)) + "</span></li>";
-      }).join("") + "</ul>";
-    }
-    document.getElementById("school").innerHTML = html;
-  }
-
-  function renderCareer(data) {
-    var c = data.career || { counts: {}, active: [] };
-    var counts = c.counts || {};
-    var html = head("Career", "Internships");
-    var live = (counts.applied || 0) + (counts.interview || 0) + (counts.offer || 0);
-    html += '<div class="career-body"><div><div class="figure"><span class="figure-num">' + live + '</span><span class="figure-unit">in play</span></div>';
-    html += '<div class="stages">' + ["saved", "applied", "interview", "offer"].map(function (k) {
-      return '<div class="stage" data-hot="' + (k === "interview" && counts[k] > 0) + '"><b>' + (counts[k] || 0) + "</b><span>" + cap(k) + "</span></div>";
-    }).join("") + "</div></div><div>";
-    if ((c.active || []).length) {
-      html += '<div class="sub-head">Next steps</div><ul class="list">' + c.active.slice(0, 3).map(function (j) {
-        return '<li class="item"><span class="item-name">' + esc(j.company) + ' <span class="muted">· ' + esc(j.next || cap(j.status)) +
-          '</span></span><span class="item-value">' + esc(cap(j.when || "")) + "</span></li>";
-      }).join("") + "</ul>";
-    } else {
-      html += '<div class="empty">' + (c.hub ? "No applications in Career Hub yet." :
-        "Applications show up here once Career Hub is connected.") + "</div>";
-    }
-    html += "</div></div>";
-    var feed = c.feed || [];
-    html += '<div class="sub-head">New internships for you' + (c.feed_new ? " · " + c.feed_new + " this week" : "") + "</div>";
-    if (feed.length) {
-      html += '<ul class="list">' + feed.slice(0, 4).map(function (f) {
-        return '<li class="item"><a class="item-name job-link" href="' + esc(f.url) + '" target="_blank" rel="noopener">' +
-          esc(f.company) + ' <span class="muted">· ' + esc(f.title) + "</span></a>" +
-          '<span class="item-value">' + esc(cap(f.when)) + "</span></li>";
-      }).join("") + "</ul>";
-    } else {
-      html += '<div class="empty">Checking company job boards every morning. New matches land here.</div>';
-    }
-    document.getElementById("career").innerHTML = html;
-  }
-
-  function renderHealth(data) {
-    var h = data.health || {};
-    var html = head("Health", h.training && h.training.next ? "Next lift: " + cap(h.training.next) : "");
-    var next = (h.appointments || [])[0];
-    if (next) {
-      html += '<div class="figure"><span class="figure-num" style="font-size:24px;letter-spacing:-0.015em">' + esc(next.title) + "</span></div>" +
-        '<div class="figure-note">' + esc(cap(next.when)) + (next.time ? ", " + esc(next.time) : "") + (next.where ? " · " + esc(next.where) : "") + "</div>";
-    } else {
-      html += '<div class="figure-note">' + (h.connected ? "No appointments booked." : "Health not connected yet. /refresh pulls HealthEx on your Mac.") + "</div>";
-    }
-    var vitals = [];
-    if (h.recovery) vitals.push('<span class="pill" data-color="' + esc(h.recovery.color) + '"><i class="dot"></i>Recovery ' + esc(h.recovery.score != null ? h.recovery.score + "%" : cap(h.recovery.color)) + "</span>");
-    if (h.sleep) vitals.push('<span class="pill">Sleep ' + esc(h.sleep.hours) + " h</span>");
-    if (vitals.length) html += '<div class="vitals">' + vitals.join("") + "</div>";
-    var upcoming = (h.appointments || []).slice(1);
-    var due = h.due || [];
-    if (upcoming.length || due.length) {
-      html += '<div class="sub-head">Coming up</div><ul class="list">' +
-        upcoming.map(function (a) {
-          return '<li class="item"><span class="item-name">' + esc(a.title) + '</span><span class="item-value">' + esc(cap(a.when)) + "</span></li>";
-        }).join("") +
-        due.map(function (d) {
-          return '<li class="item"><span class="item-name">' + esc(d.what) + '</span><span class="item-value"' +
-            (d.overdue ? ' style="color:var(--danger-text)"' : "") + ">" + esc(d.detail || (d.overdue ? "Overdue, book it" : "Due soon")) + "</span></li>";
-        }).join("") + "</ul>";
-    }
-    var record = h.record || {};
-    var groups = [["medications", "Medications"], ["conditions", "Conditions"], ["labs", "Recent labs"], ["visits", "Recent visits"]]
-      .filter(function (g) { return (record[g[0]] || []).length; });
-    if (groups.length) {
-      html += "<details><summary>Health record</summary>" + groups.map(function (g) {
-        return '<div class="record-group"><div class="sub-head" style="margin-top:8px">' + g[1] + '</div><ul class="list">' +
-          record[g[0]].map(function (r) {
-            return '<li class="item"><span class="item-name">' + esc(r.name) + '</span><span class="item-value">' + esc(r.detail || "") + "</span></li>";
-          }).join("") + "</ul></div>";
-      }).join("") + "</details>";
-    }
-    if (data.app && data.app.full_health && !groups.length) {
-      html += '<a class="more-link" href="' + esc(data.app.full_health) + '" target="_blank" rel="noopener">Full health record in Claude</a>';
-    }
-    document.getElementById("health").innerHTML = html;
-  }
-
   function renderBoard(data) {
-    var card = document.getElementById("board"), board = data.status;
-    card.hidden = !board;
-    if (!board) { card.innerHTML = ""; return; }
-    var age = (Date.now() - Date.parse(board.checked_utc)) / (60 * 60 * 1000);
-    var rows = board.rows.map(function (row) {
-      if (row.id === "app" && isFinite(age) && age > board.stale_hours) {
-        return { id: row.id, name: row.name, ok: false, detail: "Not updated in " + Math.floor(age) + " hours" };
-      }
+    var cardEl = document.getElementById('board'), board = data.status;
+    cardEl.hidden = !board;
+    if (!board) { cardEl.innerHTML = ''; return; }
+    if (board.message) { cardEl.innerHTML = head('Status') + empty(board.message); return; }
+    var age = (Date.now() - Date.parse(board.checked_utc)) / 3600000;
+    var rows = (board.rows || []).map(function(row) {
+      if (row.id === 'app' && isFinite(age) && age > board.stale_hours) return {id:row.id, name:row.name, ok:false, detail:'Not updated in ' + Math.floor(age) + ' hours'};
       return row;
-    }).sort(function (a, b) { return Number(a.ok) - Number(b.ok); });
-    var down = rows.filter(function (row) { return !row.ok; });
-    card.innerHTML = head("Status", down.length ? down.length + " down" : "All " + rows.length + " good") +
-      '<ul class="list">' + rows.map(function (row) {
-        return '<li class="item"><span class="item-name"><i class="dot" data-down="' + esc(!row.ok) + '"></i>' +
-          esc(row.name) + '</span><span class="item-value">' + esc(row.detail) + '</span></li>';
-      }).join("") + '</ul>';
-    if (down.length) {
-      var message = down.length + (down.length === 1 ? " connection down: " : " connections down: ") +
-        down.map(function (row) { return row.name; }).join(", ") + ".";
-      document.getElementById("banner").innerHTML += '<div class="banner">' + esc(message) + '</div>';
-    }
+    }).sort(function(a,b) {return Number(a.ok) - Number(b.ok);});
+    var down = rows.filter(function(row) {return !row.ok;});
+    cardEl.innerHTML = head('Status', down.length ? down.length + ' down' : 'All ' + rows.length + ' good') + '<ul class="list">' + rows.map(function(row) {
+      var pulse = previousStatus[row.id] === false && row.ok;
+      previousStatus[row.id] = row.ok;
+      return '<li class="item' + (pulse ? ' turned-green' : '') + '"><span class="item-name"><i class="dot" data-down="' + esc(!row.ok) + '"></i>' + esc(row.name) + '</span><span class="item-value">' + esc(row.detail) + '</span></li>';
+    }).join('') + '</ul>';
+    if (down.length) document.getElementById('banner').innerHTML += '<button class="banner" data-system>' + esc(down.length + (down.length === 1 ? ' connection down: ' : ' connections down: ') + down.map(function(row) {return row.name;}).join(', ') + '.') + ' Open System <span aria-hidden="true">→</span></button>';
   }
-
   function render(data) {
-    renderTop(data); renderToday(data); renderCalendar(data);
-    renderSchool(data); renderCareer(data); renderHealth(data); renderBoard(data);
+    renderTop(data); renderToday(data); renderCalendar(data); renderSchool(data); renderCareer(data); renderHealth(data); renderBoard(data);
+    if (document.querySelectorAll) document.querySelectorAll('.panel').forEach(function(panel) {
+      panel.querySelectorAll('.card,.tile').forEach(function(el,index) {el.style.setProperty('--order',index);});
+      if (!panel.hidden) panel.classList.add('entering');
+    });
   }
   window.BVOS_RENDER = render;
-
+  navigation();
   function load() {
-    if (window.BVOS_APP) return;  // the app's unlock script loads and renders the data
+    if (window.BVOS_APP) return;
     if (window.BVOS_DATA) { render(window.BVOS_DATA); return; }
-    var key = new URLSearchParams(location.search).get("key");
-    fetch("data.json" + (key ? "?key=" + encodeURIComponent(key) : ""), { cache: "no-store" })
-      .then(function (r) { if (!r.ok) throw new Error(r.status); return r.json(); })
-      .then(render)
-      .catch(function () {
-        document.getElementById("banner").innerHTML = '<div class="banner">Can\'t reach BVOS. Start it with: python3 scripts/dashboard.py serve</div>';
-      });
+    var key = new URLSearchParams(location.search).get('key');
+    fetch('data.json' + (key ? '?key=' + encodeURIComponent(key) : ''), {cache:'no-store'})
+      .then(function(r) {if (!r.ok) throw new Error(r.status); return r.json();}).then(render)
+      .catch(function() {document.getElementById('banner').innerHTML = '<div class="banner">Can’t reach BVOS. Start it with: python3 scripts/dashboard.py serve</div>';});
   }
   load();
   if (!window.BVOS_DATA && !window.BVOS_APP) {
     setInterval(load, REFRESH_MS);
-    document.addEventListener("visibilitychange", function () { if (!document.hidden) load(); });
+    document.addEventListener('visibilitychange', function() {if (!document.hidden) load();});
   }
 })();
 </script>
