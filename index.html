@@ -61,6 +61,14 @@ h1 { font-size:34px; line-height:1.2; letter-spacing:-.04em; margin:0; font-weig
 .card-title { font-size:17px; font-weight:650; }
 .card-sub,.secondary,.muted,.empty { font-size:13px; color:var(--muted); }
 .metrics { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:12px; grid-column:1 / -1; }
+.metrics.has-weather { grid-template-columns:repeat(4,minmax(0,1fr)); }
+.weather-tile .figure-num { font-size:32px; }
+.weather-tile .metric-label { font-size:12px; margin-top:3px; }
+.weather-tile .weather-hilow { font-size:13px; font-weight:600; margin-top:4px; color:var(--text); }
+.weather-tile .weather-marks { font-size:11px; margin-top:4px; color:var(--muted); line-height:1.3; }
+.weather-tile .weather-credit { font-size:10px; margin-top:6px; color:var(--muted); opacity:.75; }
+.weather-icon { width:15px; height:15px; fill:none; stroke:currentColor; stroke-width:1.7; stroke-linecap:round; stroke-linejoin:round; flex:none; }
+.day-weather { display:flex; align-items:center; gap:6px; margin-top:4px; font-weight:400; font-size:12px; color:var(--muted); }
 .tile { border-radius:18px; padding:20px; min-width:0; overflow-wrap:anywhere; }
 .figure-num { font-size:38px; font-weight:700; letter-spacing:-.05em; line-height:1.2; }
 .figure-unit { font-size:13px; color:var(--muted); margin-left:6px; }
@@ -132,6 +140,7 @@ details p { margin:14px 0 0; font-size:13px; color:var(--muted); }
   .content-grid { grid-template-columns:minmax(0,1fr); gap:14px; }
   .card { padding:20px; }
   .metrics { gap:8px; }
+  .metrics.has-weather { grid-template-columns:repeat(2,minmax(0,1fr)); }
   .tile { padding:14px 10px; }
   .figure-num { font-size:30px; }
   .figure-unit { display:block; margin-left:0; }
@@ -279,10 +288,36 @@ details p { margin:14px 0 0; font-size:13px; color:var(--muted); }
       return '<div class="event"><div class="event-time">' + esc(e.time) + '</div><div><div class="event-title">' + esc(e.title) + '</div>' + (e.where ? '<div class="event-where">' + esc(e.where) + '</div>' : '') + '</div></div>';
     }).join('') : '<div class="free">Nothing scheduled</div>';
   }
+  function weatherIcon(code) {
+    var c = Number(code) || 0;
+    if (c === 0) return '<svg class="weather-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M2 12h2m16 0h2M5 5l1.5 1.5m11 11L19 19M5 19l1.5-1.5m11-11L19 5"/></svg>';
+    if (c === 1 || c === 2 || c === 3) return '<svg class="weather-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"/></svg>';
+    if (c === 45 || c === 48) return '<svg class="weather-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 14h16M4 18h16M7 10h10M17.5 10a4 4 0 0 0-7.5-2 5 5 0 0 0-4 4"/></svg>';
+    if (c === 71 || c === 73 || c === 75 || c === 77 || c === 85 || c === 86) return '<svg class="weather-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v18m9-9H3m15.5-6.5L5.5 17.5m0-11 13 13"/></svg>';
+    if (c === 95 || c === 96 || c === 99) return '<svg class="weather-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M19 16.9A5 5 0 0 0 18 7h-1.26a8 8 0 1 0-11.62 9"/><polyline points="13 11 9 17 15 17 11 23"/></svg>';
+    return '<svg class="weather-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 16.58A5 5 0 0 0 18 7h-1.26A8 8 0 1 0 4 15.25"/><path d="M8 19v2m8-2v2m-4-1v2"/></svg>';
+  }
   function renderToday(data) {
     var o = data.overview || {}, due = o.next_deadline, items = (data.today || []).slice();
     items.sort(function (a,b) { return Number(b.area === 'Plan') - Number(a.area === 'Plan'); });
-    var html = '<div class="metrics">' + tile(due ? due.days : '–', 'days to next deadline') + tile(o.streak || 0, 'day check-in streak') + tile(o.inbox || 0, 'inbox items') + '</div>';
+    var w = data.weather;
+    var weatherTile = '';
+    if (w && w.now && w.day) {
+      var marksHtml = (w.marks && w.marks.length) ? '<div class="weather-marks">' + w.marks.map(function(m) { return esc(m.time || m.label) + ' ' + esc(m.feels) + '°'; }).join(' · ') + '</div>' : '';
+      weatherTile = '<div class="tile weather-tile">' +
+        '<span class="figure-num">' + esc(w.now.temp) + '°</span>' +
+        '<div class="metric-label">Feels like ' + esc(w.now.feels) + '° · ' + esc(w.now.words) + '</div>' +
+        '<div class="weather-hilow">' + esc(w.day.high) + '° / ' + esc(w.day.low) + '°</div>' +
+        marksHtml +
+        '<div class="weather-credit">as of ' + esc(w.as_of) + ' · Open-Meteo.com</div>' +
+        '</div>';
+    }
+    var html = '<div class="metrics' + (weatherTile ? ' has-weather' : '') + '">' +
+      weatherTile +
+      tile(due ? due.days : '–', 'days to next deadline') +
+      tile(o.streak || 0, 'day check-in streak') +
+      tile(o.inbox || 0, 'inbox items') +
+      '</div>';
     var body = '';
     if (items.length) {
       var lead = items[0];
@@ -342,7 +377,17 @@ details p { margin:14px 0 0; font-size:13px; color:var(--muted); }
   }
   function renderCalendar(data) {
     var days = data.calendar || [];
-    document.getElementById('calendar').innerHTML = card('Your week', days.map(function(day) {return '<div class="day"><div class="day-label">' + esc(day.label) + '</div><div>' + eventRows(day.events || []) + '</div></div>';}).join('') || empty('Calendar not connected yet.'), true, 'Next ' + days.length + ' days');
+    var weatherWeek = (data.weather && data.weather.week) ? data.weather.week : [];
+    var weatherByDate = {};
+    weatherWeek.forEach(function (w) { if (w.date) weatherByDate[w.date] = w; });
+    document.getElementById('calendar').innerHTML = card('Your week', days.map(function(day) {
+      var w = weatherByDate[day.date];
+      var weatherHtml = '';
+      if (w && w.high != null && w.low != null) {
+        weatherHtml = '<div class="day-weather">' + weatherIcon(w.code) + '<span>' + esc(w.high) + '° / ' + esc(w.low) + '°</span></div>';
+      }
+      return '<div class="day"><div class="day-label"><div>' + esc(day.label) + '</div>' + weatherHtml + '</div><div>' + eventRows(day.events || []) + '</div></div>';
+    }).join('') || empty('Calendar not connected yet.'), true, 'Next ' + days.length + ' days');
   }
   function renderBoard(data) {
     var cardEl = document.getElementById('board'), board = data.status;
