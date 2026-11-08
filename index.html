@@ -17,6 +17,7 @@
   --text:#1c2430; --muted:#626e7d; --line:rgba(120,135,155,.18); --inner:rgba(255,255,255,.8);
   --accent:#007aff; --accent-soft:rgba(0,122,255,.1); --green:#24834b; --orange:#a85b00; --red:#c32d36;
   --red-soft:rgba(210,45,55,.09); --wash:rgba(0,122,255,.09); --shadow:0 8px 32px rgba(30,50,80,.045);
+  --green-soft:rgba(36,131,75,.1); --orange-soft:rgba(168,91,0,.1);
   --radius:18px; --radius-sm:10px; --shadow-card:var(--shadow); --text-strong:var(--text); --danger-text:var(--red);
   --font:-apple-system,BlinkMacSystemFont,"SF Pro Text",system-ui,sans-serif;
   font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text",system-ui,sans-serif; color-scheme:light;
@@ -25,7 +26,8 @@
   :root { --canvas:#101318; --surface:rgba(30,35,43,.72); --solid:#1e232b; --well:rgba(180,195,215,.07);
     --text:#f1f4f8; --muted:#a5afbc; --line:rgba(185,200,220,.16); --inner:rgba(255,255,255,.09);
     --accent:#0a84ff; --accent-soft:rgba(10,132,255,.16); --green:#66d18b; --orange:#ffb457; --red:#ff858d;
-    --red-soft:rgba(255,80,95,.12); --wash:rgba(10,132,255,.07); --shadow:0 8px 32px rgba(0,0,0,.16); color-scheme:dark; }
+    --red-soft:rgba(255,80,95,.12); --wash:rgba(10,132,255,.07); --shadow:0 8px 32px rgba(0,0,0,.16); color-scheme:dark;
+    --green-soft:rgba(102,209,139,.13); --orange-soft:rgba(255,180,87,.13); }
 }
 * { box-sizing:border-box; }
 body { margin:0; color:var(--text); background:radial-gradient(ellipse at 70% 0,var(--wash),transparent 65%),var(--canvas); font-size:17px; line-height:1.5; min-height:100vh; }
@@ -101,6 +103,19 @@ h1 { font-size:34px; line-height:1.2; letter-spacing:-.04em; margin:0; font-weig
 .stage span { font-size:13px; color:var(--muted); }
 .dot { display:inline-block; width:8px; height:8px; border-radius:50%; background:var(--green); margin-right:10px; flex:none; }
 .dot[data-down="true"] { background:var(--red); }
+.tab[data-alert="true"]::after { content:""; position:absolute; top:12px; left:32px; width:8px; height:8px; border-radius:50%; background:var(--orange); box-shadow:0 0 0 2px var(--solid); pointer-events:none; }
+#builds { margin-bottom:18px; }
+.build { align-items:center; }
+.build-num { color:var(--muted); font-size:13px; font-variant-numeric:tabular-nums; margin-right:4px; }
+.build-meta { display:flex; align-items:center; gap:10px; flex:none; font-size:13px; color:var(--muted); white-space:nowrap; }
+.pill { display:inline-block; padding:2px 10px; border-radius:999px; font-size:12px; font-weight:600; line-height:1.6; background:var(--well); color:var(--muted); }
+.pill[data-state="merged"] { background:var(--green-soft); color:var(--green); }
+.pill[data-state="building"],.pill[data-state="waiting-for-checks"] { background:var(--accent-soft); color:var(--accent); }
+.pill[data-state="waiting-for-ben"] { background:var(--orange-soft); color:var(--orange); }
+.pill[data-state="parked"] { background:var(--red-soft); color:var(--red); }
+.build .secondary { margin-top:2px; }
+.builders { border-top:1px solid var(--line); padding-top:12px; }
+.builder { margin:0; font-size:13px; color:var(--muted); }
 .banner { padding:14px 18px; border-radius:14px; margin-bottom:24px; background:var(--well); font-size:13px; }
 button.banner { display:block; width:100%; text-align:left; border:1px solid var(--red); background:var(--red-soft); color:var(--red); }
 .deadline[data-today="true"] { border-left:3px solid var(--orange); padding-left:14px; }
@@ -135,6 +150,8 @@ details p { margin:14px 0 0; font-size:13px; color:var(--muted); }
   .tabs { position:fixed; z-index:10; bottom:calc(12px + env(safe-area-inset-bottom,0px)); left:12px; right:12px; flex-direction:row; margin:0; padding:5px; border:1px solid var(--inner); border-radius:22px; background:var(--surface); box-shadow:var(--shadow); }
   .tab { flex:1; width:0; height:58px; padding:5px 0; flex-direction:column; justify-content:center; gap:3px; font-size:10px; border-radius:17px; }
   #tab-marker { left:5px; top:5px; width:calc((100% - 10px) / 6); height:58px; transform:translateX(calc(var(--index,0) * 100%)); border-radius:17px; }
+  .tab[data-alert="true"]::after { top:9px; left:calc(50% + 5px); }
+  #builds { margin-bottom:14px; }
   main { margin:0; padding:32px 20px calc(112px + env(safe-area-inset-bottom,0px)); }
   h1 { font-size:28px; }
   .page-head { margin-bottom:24px; }
@@ -181,7 +198,7 @@ details p { margin:14px 0 0; font-size:13px; color:var(--muted); }
       <section class="panel" id="panel-career" role="tabpanel" aria-labelledby="tab-career" tabindex="0" hidden><header class="page-head"><h1>Career</h1></header><div class="content-grid" id="career"></div></section>
       <section class="panel" id="panel-health" role="tabpanel" aria-labelledby="tab-health" tabindex="0" hidden><header class="page-head"><h1>Health</h1></header><div class="content-grid" id="health"></div></section>
       <section class="panel" id="panel-calendar" role="tabpanel" aria-labelledby="tab-calendar" tabindex="0" hidden><header class="page-head"><h1>Calendar</h1></header><div class="content-grid" id="calendar"></div></section>
-      <section class="panel" id="panel-system" role="tabpanel" aria-labelledby="tab-system" tabindex="0" hidden><header class="page-head"><h1>System</h1></header><div class="card board" id="board"></div></section>
+      <section class="panel" id="panel-system" role="tabpanel" aria-labelledby="tab-system" tabindex="0" hidden><header class="page-head"><h1>System</h1></header><div class="card builds" id="builds" hidden></div><div class="card board" id="board"></div></section>
     </div>
   </main>
 </div>
@@ -426,8 +443,49 @@ details p { margin:14px 0 0; font-size:13px; color:var(--muted); }
     }).join('') + '</ul>';
     if (down.length) document.getElementById('banner').innerHTML += '<button class="banner" data-system>' + esc(down.length + (down.length === 1 ? ' connection down: ' : ' connections down: ') + down.map(function(row) {return row.name;}).join(', ') + '.') + ' Open System <span aria-hidden="true">→</span></button>';
   }
+  var BUILD_STATES = {'merged':'Merged', 'building':'Building', 'waiting for checks':'Waiting for checks', 'waiting for ben':'Waiting for Ben', 'parked':'Parked', 'queued':'Queued'};
+  var NEEDS_BEN = ['waiting for ben', 'parked'];
+  function stateKey(state) { return String(state == null ? '' : state).trim().toLowerCase(); }
+  function needsBen(task) { return NEEDS_BEN.indexOf(stateKey(task.state)) >= 0; }
+  function renderBuilds(data) {
+    // Builds come only from the Mac (private/builds.json); the app never has them, so the card hides.
+    var builds = data.builds && typeof data.builds === 'object' ? data.builds : null;
+    var isTask = function(t) { return t && typeof t === 'object'; };
+    var tasks = builds && Array.isArray(builds.tasks) ? builds.tasks.filter(isTask) : [];
+    var builders = builds && Array.isArray(builds.builders) ? builds.builders.filter(isTask) : [];
+    var waiting = tasks.filter(needsBen).length;
+    var tab = document.getElementById('tab-system');
+    if (tab && tab.setAttribute) tab.setAttribute('data-alert', waiting ? 'true' : 'false');
+    var cardEl = document.getElementById('builds');
+    if (!cardEl) return;
+    cardEl.hidden = !builds;
+    if (!builds) { cardEl.innerHTML = ''; return; }
+    // Waiting for Ben and Parked always show, oldest first; the newest other tasks fill up to 5 rows.
+    var age = function(t) { return Date.parse(t.time) || 0; };
+    var held = tasks.filter(needsBen).sort(function(a,b) {return age(a) - age(b);});
+    var others = tasks.filter(function(t) {return !needsBen(t);}).sort(function(a,b) {return age(b) - age(a);});
+    var shown = held.concat(others.slice(0, Math.max(0, 5 - held.length)));
+    var rows = shown.map(function(t) {
+      var key = stateKey(t.state), note = '';
+      if (needsBen(t)) {
+        var url = safeLink(t.pr), number = /\/pull\/(\d+)/.exec(url), parts = [];
+        if (t.why) parts.push(esc(t.why));
+        if (url) parts.push('<a href="' + esc(url) + '" target="_blank" rel="noopener noreferrer">' + (number ? 'PR #' + number[1] : 'Pull request') + ' <span aria-hidden="true">↗</span></a>');
+        if (parts.length) note = '<div class="secondary">' + parts.join(' · ') + '</div>';
+      }
+      return '<li class="item build"><div class="item-name"><span class="build-num">' + esc(t.number) + '</span> ' + esc(t.title) + note + '</div>' +
+        '<span class="build-meta"><span class="pill" data-state="' + esc(key.replace(/\s+/g, '-')) + '">' + esc(BUILD_STATES[key] || cap(key) || 'Unknown') + '</span>' +
+        '<span class="build-time">' + esc(t.when || '') + '</span></span></li>';
+    }).join('');
+    var lines = builders.map(function(b) {
+      var line = b.line || (cap(String(b.name || 'Builder')) + ' ' + (stateKey(b.state) || 'out'));
+      return '<p class="builder">' + esc(line) + '</p>';
+    }).join('');
+    cardEl.innerHTML = head('Builds', waiting ? (waiting === 1 ? '1 needs you' : waiting + ' need you') : '') +
+      (rows ? '<ul class="list">' + rows + '</ul>' : empty('No builds yet.')) + (lines ? '<div class="builders">' + lines + '</div>' : '');
+  }
   function render(data) {
-    renderTop(data); renderToday(data); renderCalendar(data); renderSchool(data); renderCareer(data); renderHealth(data); renderBoard(data);
+    renderTop(data); renderToday(data); renderCalendar(data); renderSchool(data); renderCareer(data); renderHealth(data); renderBoard(data); renderBuilds(data);
     if (document.querySelectorAll) document.querySelectorAll('.panel').forEach(function(panel) {
       panel.querySelectorAll('.card,.tile').forEach(function(el,index) {el.style.setProperty('--order',index);});
       if (!panel.hidden) panel.classList.add('entering');
