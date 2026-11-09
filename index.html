@@ -399,6 +399,10 @@ details p { margin:14px 0 0; font-size:13px; color:var(--muted); }
   function renderCareer(data) {
     var c = data.career || {}, counts = c.counts || {}, feed = c.feed || [];
     var html = '<div class="metrics">' + tile(c.feed_new || 0, 'new internships') + tile(counts.applied || 0, 'applications') + tile(counts.interview || 0, 'interviews') + '</div>';
+    var followups = data.career_followups || [];
+    html += card('Follow-ups', followups.length ? '<ul class="list">' + followups.map(function(j) {
+      return '<li class="item"><div class="item-name">' + esc(j.next) + '<div class="secondary">' + esc(j.company || j.contact || '') + (j.role ? ' · ' + esc(j.role) : '') + '</div></div><span class="item-value">' + esc(cap(j.when || 'Date not set')) + '</span></li>';
+    }).join('') + '</ul>' : empty('No follow-ups due.'), true, data.career_synced || '');
     html += feed.map(function(f) {
       var url = safeLink(f.url);
       return '<article class="card internship">' + head(f.company, 'New internship') + '<details data-expand><summary>' + esc(f.title) + '<span>' + esc(f.location || 'Location not listed') + ' · ' + (f.posted ? 'Posted ' : 'First seen ') + esc(f.posted || f.first_seen || f.when || 'date not listed') + '</span></summary><p>' + esc(f.detail || 'Open the posting to see the role and application requirements.') + '</p>' + (url ? '<a class="apply tap" target="_blank" rel="noopener noreferrer" href="' + esc(url) + '">Apply <span aria-hidden="true">↗</span></a>' : '<p>Posting link unavailable</p>') + '</details></article>';
@@ -445,6 +449,7 @@ details p { margin:14px 0 0; font-size:13px; color:var(--muted); }
     if (board.message) { cardEl.innerHTML = head('Status') + empty(board.message); return; }
     var age = (Date.now() - Date.parse(board.checked_utc)) / 3600000;
     var rows = (board.rows || []).map(function(row) {
+      if (row.id === 'career' && row.ok && data.career_status) return data.career_status;
       if (row.id === 'app' && isFinite(age) && age > board.stale_hours) return {id:row.id, name:row.name, ok:false, detail:'Not updated in ' + Math.floor(age) + ' hours'};
       return row;
     }).sort(function(a,b) {return Number(a.ok) - Number(b.ok);});
