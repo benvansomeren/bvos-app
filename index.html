@@ -130,7 +130,7 @@ details p { margin:14px 0 0; font-size:13px; color:var(--muted); }
 .rotation { display:flex; gap:8px; flex-wrap:wrap; margin-top:24px; }
 .rotation span { border-radius:12px; background:var(--well); padding:10px 16px; font-size:13px; }
 .rotation .next { background:var(--accent-soft); color:var(--accent); }
-#agents-card { margin-bottom:18px; }
+#agents-card, #alerts-card { margin-bottom:18px; }
 .agents-line { grid-column:1 / -1; margin:0; font-size:13px; color:var(--muted); }
 .agents-hero { grid-column:1 / -1; padding:0 0 4px; }
 .agents-sentence { margin:0; font-size:26px; line-height:1.3; font-weight:650; letter-spacing:-.025em; }
@@ -233,7 +233,7 @@ details p { margin:14px 0 0; font-size:13px; color:var(--muted); }
       <section class="panel" id="panel-career" role="tabpanel" aria-labelledby="tab-career" tabindex="0" hidden><header class="page-head"><h1>Career</h1></header><div class="content-grid" id="career"></div></section>
       <section class="panel" id="panel-health" role="tabpanel" aria-labelledby="tab-health" tabindex="0" hidden><header class="page-head"><h1>Health</h1></header><div class="content-grid" id="health"></div></section>
       <section class="panel" id="panel-calendar" role="tabpanel" aria-labelledby="tab-calendar" tabindex="0" hidden><header class="page-head"><h1>Calendar</h1></header><div class="content-grid" id="calendar"></div></section>
-      <section class="panel" id="panel-system" role="tabpanel" aria-labelledby="tab-system" tabindex="0" hidden><header class="page-head"><h1>System</h1></header><div class="card builds" id="builds" hidden></div><div class="card builds" id="agents-card" hidden></div><div class="card board" id="board"></div></section>
+      <section class="panel" id="panel-system" role="tabpanel" aria-labelledby="tab-system" tabindex="0" hidden><header class="page-head"><h1>System</h1></header><div class="card builds" id="alerts-card" hidden></div><div class="card builds" id="builds" hidden></div><div class="card builds" id="agents-card" hidden></div><div class="card board" id="board"></div></section>
     </div>
   </main>
 </div>
@@ -710,9 +710,21 @@ details p { margin:14px 0 0; font-size:13px; color:var(--muted); }
       (needs.length ? '<div class="sub-head">Needs you</div>' + needs.map(function (n) { return line(n.number + ' · ' + n.title + ': ' + (n.why || n.state || '')); }).join('') : '') +
       (queue.length ? '<div class="sub-head">Up next</div>' + queue.map(function (q) { return line(q.number + ' · ' + q.title); }).join('') : '');
   }
+  // ---- Alerts: what the watchdog says is down (Mac hub only; the data never reaches the app) ----
+  function renderAlerts(data) {
+    var down = objects(data.alerts && data.alerts.down), cardEl = document.getElementById('alerts-card'), banner = document.getElementById('banner');
+    if (cardEl) {
+      cardEl.hidden = !down.length;
+      cardEl.innerHTML = down.length ? head('Needs a fix', down.length + ' down') + '<ul class="list">' + down.map(function(d) {
+        return '<li class="item"><div class="item-name"><i class="dot" data-down="true"></i>' + esc(d.name) +
+          '<div class="secondary">' + esc(d.fix) + '</div></div><span class="item-value">' + esc(d.since ? 'Since ' + d.since : '') + '</span></li>';
+      }).join('') + '</ul>' : '';
+    }
+    if (down.length && banner) banner.innerHTML = '<button class="banner" data-system>' + esc(down.length + (down.length === 1 ? ' thing needs a fix.' : ' things need a fix.')) + ' Open System <span aria-hidden="true">→</span></button>' + banner.innerHTML;
+  }
   function render(data) {
     setAgents(data);
-    renderTop(data); renderToday(data); renderCalendar(data); renderSchool(data); renderCareer(data); renderHealth(data); renderBoard(data); renderBuilds(data);
+    renderTop(data); renderToday(data); renderCalendar(data); renderSchool(data); renderCareer(data); renderHealth(data); renderBoard(data); renderBuilds(data); renderAlerts(data);
     drawAgents(); renderAgentsCard(data);
     if (agentsLive && typeof location !== 'undefined' && location.hash === '#agents' && active !== 'agents') activate('agents', false, false);
     if (document.querySelectorAll) document.querySelectorAll('.panel').forEach(function(panel) {
