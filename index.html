@@ -130,6 +130,31 @@ details p { margin:14px 0 0; font-size:13px; color:var(--muted); }
 .rotation { display:flex; gap:8px; flex-wrap:wrap; margin-top:24px; }
 .rotation span { border-radius:12px; background:var(--well); padding:10px 16px; font-size:13px; }
 .rotation .next { background:var(--accent-soft); color:var(--accent); }
+.tab[hidden] { display:none; }
+.brain { max-width:760px; }
+.brain-ask input { width:100%; height:64px; padding:0 22px; border-radius:18px; border:1px solid var(--inner); background:var(--solid); color:var(--text); font:inherit; font-size:20px; box-shadow:var(--shadow); }
+.brain-ask input::placeholder { color:var(--muted); }
+.brain-ask input:focus-visible { outline:2px solid var(--accent); outline-offset:2px; }
+.brain-big { font-size:26px; line-height:1.35; font-weight:600; letter-spacing:-.02em; margin:0 0 8px; overflow-wrap:anywhere; }
+.brain-answer { margin:28px 0 4px; }
+.brain-source { font-size:13px; color:var(--muted); margin:0; }
+.brain-line { color:var(--muted); font-size:15px; margin:20px 0 0; }
+.brain-block { margin-top:36px; }
+.brain-block .card-title { margin-bottom:10px; }
+.brain-btn { height:44px; padding:0 22px; margin-top:6px; border-radius:12px; border:1px solid var(--accent); background:var(--accent-soft); color:var(--accent); font-weight:600; }
+.brain-link { border:0; background:none; padding:0; color:var(--accent); font:inherit; text-decoration:underline; text-underline-offset:3px; }
+.brain-list { list-style:none; margin:0; padding:0; }
+.brain-file { display:block; width:100%; text-align:left; padding:14px 6px; border:0; border-top:1px solid var(--line); background:transparent; border-radius:0; }
+.brain-file:hover { background:var(--well); }
+.brain-title { font-weight:600; }
+.brain-chip { display:inline-block; margin-left:8px; padding:0 9px; border-radius:999px; background:var(--accent-soft); color:var(--accent); font-size:12px; font-weight:600; line-height:1.7; }
+.brain-date { margin-left:8px; color:var(--muted); font-size:13px; }
+.brain-snippet { display:block; margin-top:2px; color:var(--muted); font-size:14px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.brain-snippet b { color:var(--text); font-weight:650; }
+.brain-hint { padding:10px 0; border-top:1px solid var(--line); }
+.brain-area { display:flex; justify-content:space-between; gap:16px; align-items:baseline; width:100%; text-align:left; padding:14px 6px; border:0; border-top:1px solid var(--line); background:transparent; border-radius:0; }
+.brain-area:hover { background:var(--well); }
+.brain-area .item-value { min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 #agents-card, #alerts-card { margin-bottom:18px; }
 .agents-line { grid-column:1 / -1; margin:0; font-size:13px; color:var(--muted); }
 .agents-hero { grid-column:1 / -1; padding:0 0 4px; }
@@ -182,6 +207,8 @@ details p { margin:14px 0 0; font-size:13px; color:var(--muted); }
   .tab { flex:1; width:0; height:58px; padding:5px 0; flex-direction:column; justify-content:center; gap:3px; font-size:10px; border-radius:17px; }
   #tab-marker { left:5px; top:5px; width:calc((100% - 10px) / var(--tabs,6)); height:58px; transform:translateX(calc(var(--index,0) * 100%)); border-radius:17px; }
   .tab[data-alert="true"]::after { top:9px; left:calc(50% + 5px); }
+  .brain-big { font-size:22px; }
+  .brain-area { flex-wrap:wrap; gap:2px 12px; }
   #builds { margin-bottom:14px; }
   main { margin:0; padding:32px 20px calc(112px + env(safe-area-inset-bottom,0px)); }
   h1 { font-size:28px; }
@@ -220,8 +247,7 @@ details p { margin:14px 0 0; font-size:13px; color:var(--muted); }
       <button class="tab" id="tab-career" role="tab" data-tab="career" aria-controls="panel-career" aria-selected="false" tabindex="-1"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="7" width="18" height="14" rx="3"/><path d="M8 7V3h8v4M3 12l9 3 9-3M10 14v3h4v-3"/></svg><span>Career</span></button>
       <button class="tab" id="tab-health" role="tab" data-tab="health" aria-controls="panel-health" aria-selected="false" tabindex="-1"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21C-5 10 5-2 12 7c7-9 17 3 0 14z"/></svg><span>Health</span></button>
       <button class="tab" id="tab-calendar" role="tab" data-tab="calendar" aria-controls="panel-calendar" aria-selected="false" tabindex="-1"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M7 3v4m10-4v4M3 10h18M7 14h3m4 0h3m-10 4h3"/></svg><span>Calendar</span></button>
-      <button class="tab" id="tab-system" role="tab" data-tab="system" aria-controls="panel-system" aria-selected="false" tabindex="-1"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="18" height="7" rx="2"/><rect x="3" y="14" width="18" height="7" rx="2"/><path d="M7 6.5h.01M7 17.5h.01M12 6.5h5M12 17.5h5"/></svg><span>System</span></button>
-    </div>
+      <button class="tab" id="tab-system" role="tab" data-tab="system" aria-controls="panel-system" aria-selected="false" tabindex="-1"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="18" height="7" rx="2"/><rect x="3" y="14" width="18" height="7" rx="2"/><path d="M7 6.5h.01M7 17.5h.01M12 6.5h5M12 17.5h5"/></svg><span>System</span></button>    </div>
     <div class="sidebar-footer"><div id="date"></div><div id="status" aria-live="polite"></div></div>
   </aside>
   <main>
@@ -242,7 +268,9 @@ details p { margin:14px 0 0; font-size:13px; color:var(--muted); }
 (function () {
   "use strict";
   var REFRESH_MS = 5 * 60 * 1000;
-  var areas = ["today", "agents", "school", "career", "health", "calendar", "system"];
+  var areas = ["today", "agents", "school", "career", "health", "calendar", "system", "brain"];
+  // The Agents and Brain tabs are only on this Mac's own page (agents_live, brain_live); every other tab is always there.
+  function shown(id) { var tab = document.getElementById('tab-' + id); return !!tab && !tab.hidden; }
   var active = null, previousStatus = {};
   var agentsFeed = null, agentsLive = false, hubSilent = false, runNote = '', agentsHtml = '', agentsTimer = null;
   function tabHidden(id) { var tab = document.getElementById('tab-' + id); return !tab || !!tab.hidden; }
@@ -260,7 +288,7 @@ details p { margin:14px 0 0; font-size:13px; color:var(--muted); }
   var motionPreference = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)');
   function reduced() { return !motionPreference || motionPreference.matches; }
   function activate(id, focus, writeHash) {
-    if (areas.indexOf(id) < 0 || (id === 'agents' && tabHidden('agents'))) id = 'today';
+    if (areas.indexOf(id) < 0 || !shown(id)) id = 'today';
     var old = active;
     var visible = visibleAreas();
     active = id;
@@ -298,25 +326,25 @@ details p { margin:14px 0 0; font-size:13px; color:var(--muted); }
     try { localStorage.setItem('bvos-tab', id); } catch (_) { /* Storage can be blocked. */ }
     if (id === 'agents' && old !== id) pollAgents();
   }
+  function wireTab(id) {
+    var tab = document.getElementById('tab-' + id);
+    if (!tab) return;
+    tab.addEventListener('click', function () { activate(id, false, true); });
+    tab.addEventListener('keydown', function (event) {
+      var order = areas.filter(shown), at = order.indexOf(id), next;
+      if (event.key === 'ArrowRight' || event.key === 'ArrowDown') next = order[(at + 1) % order.length];
+      if (event.key === 'ArrowLeft' || event.key === 'ArrowUp') next = order[(at + order.length - 1) % order.length];
+      if (event.key === 'Home') next = order[0];
+      if (event.key === 'End') next = order[order.length - 1];
+      if (next != null) { event.preventDefault(); activate(next, true, true); }
+    });
+  }
   function navigation() {
     var list = document.getElementById('tablist');
     if (!list) return;
     function orientation() { list.setAttribute('aria-orientation', window.matchMedia('(min-width: 900px)').matches ? 'vertical' : 'horizontal'); }
     orientation(); window.addEventListener('resize', orientation);
-    areas.forEach(function (id, index) {
-      var tab = document.getElementById('tab-' + id);
-      if (!tab) return;
-      tab.addEventListener('click', function () { activate(id, false, true); });
-      tab.addEventListener('keydown', function (event) {
-        var next, shown = visibleAreas(), at = shown.indexOf(id), count = shown.length;
-        if (at < 0) return;
-        if (event.key === 'ArrowRight' || event.key === 'ArrowDown') next = (at + 1) % count;
-        if (event.key === 'ArrowLeft' || event.key === 'ArrowUp') next = (at + count - 1) % count;
-        if (event.key === 'Home') next = 0;
-        if (event.key === 'End') next = count - 1;
-        if (next != null) { event.preventDefault(); activate(shown[next], true, true); }
-      });
-    });
+    areas.forEach(wireTab);
     function fromHash() { activate(location.hash.slice(1).toLowerCase(), false, false); }
     window.addEventListener('hashchange', fromHash);
     window.addEventListener('popstate', fromHash);
@@ -546,6 +574,178 @@ details p { margin:14px 0 0; font-size:13px; color:var(--muted); }
     cardEl.innerHTML = head('Builds', waiting ? (waiting === 1 ? '1 needs you' : waiting + ' need you') : '') +
       (rows ? '<ul class="list">' + rows + '</ul>' : empty('No builds yet.')) + (lines ? '<div class="builders">' + lines + '</div>' : '');
   }
+  // ---------- Brain tab (this Mac only: data.brain_live) ----------
+  var brainState = {poll: null, wired: false, seq: 0, asking: 0};
+  var MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  function el(id) { return document.getElementById(id); }
+  function num(n) { return Number(n || 0).toLocaleString('en-US'); }
+  function plural(n, one, many) { return num(n) + ' ' + (Number(n) === 1 ? one : many); }
+  function bytesLabel(b) {
+    b = Number(b || 0);
+    if (b >= 1e9) return Math.round(b / 1e9) + ' GB';
+    if (b >= 1e6) return Math.round(b / 1e6) + ' MB';
+    return Math.max(1, Math.round(b / 1e3)) + ' KB';
+  }
+  function brainTime(iso) {
+    var m = /T(\d{2}):(\d{2})/.exec(iso || '');
+    return m ? (Number(m[1]) % 12 || 12) + ':' + m[2] + (Number(m[1]) < 12 ? ' am' : ' pm') : '';
+  }
+  function shortDate(day) {
+    var m = /^\d{4}-(\d{2})-(\d{2})/.exec(day || '');
+    return m ? MONTHS[Number(m[1]) - 1] + ' ' + Number(m[2]) : '';
+  }
+  // Bold the words that matched. The file's text is cut on the raw string, then each piece is escaped.
+  function mark(text, terms) {
+    var words = (terms || []).filter(Boolean).map(function (t) { return String(t).replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); });
+    if (!words.length) return esc(text);
+    return String(text).split(new RegExp('(' + words.join('|') + ')', 'gi')).map(function (part, i) { return i % 2 ? '<b>' + esc(part) + '</b>' : esc(part); }).join('');
+  }
+  function brainFetch(path, body) {
+    var opts = {cache: 'no-store'};
+    if (body !== undefined) { opts.method = 'POST'; opts.headers = {'Content-Type': 'application/json'}; opts.body = JSON.stringify(body); }
+    return fetch(path, opts).then(function (r) { return r.json().then(function (json) { return {ok: r.ok, body: json}; }); });
+  }
+  function fileRows(rows, terms) {
+    return '<ul class="brain-list">' + rows.map(function (r) {
+      return '<li><button class="brain-file" data-brain-act="open" data-brain-val="' + esc(r.id) + '"><span class="brain-title">' + esc(r.title) + '</span>' +
+        '<span class="brain-chip">' + esc(r.area) + '</span><span class="brain-date">' + esc(shortDate(r.date)) + '</span>' +
+        (r.snippet ? '<span class="brain-snippet">' + mark(r.snippet, terms) + '</span>' : '') + '</button></li>';
+    }).join('') + '</ul>';
+  }
+  function showResults(rows, terms, none) {
+    el('brain-results').innerHTML = rows.length ? fileRows(rows, terms) : (none ? '<p class="brain-line">' + esc(none) + '</p>' : '');
+  }
+  function renderFiling(f) {
+    var filing = el('brain-filing'), html = '';
+    if (f && f.state === 'waiting') {
+      html = '<p class="brain-big">' + esc(num(f.files) + ' files are waiting in Downloads (' + bytesLabel(f.bytes) + '). File them? Every move can be undone.') + '</p>' +
+        '<button class="brain-btn" data-brain-act="file">File them</button>';
+    } else if (f && f.state === 'running') {
+      html = '<p class="brain-big">' + esc('Filing…' + (f.total ? ' ' + num(f.done) + ' of ' + num(f.total) : '')) + '</p>';
+    } else if (f && f.state === 'done') {
+      html = '<p class="brain-big">' + esc('Filed ' + num(f.moved) + '.' + (f.left_alone ? ' ' + num(f.left_alone) + ' installers and archives left alone.' : '')) + '</p>' +
+        '<button class="brain-btn" data-brain-act="undo" data-brain-val="' + esc(f.batch) + '">Undo</button>';
+    }
+    filing.innerHTML = html; filing.hidden = !html;
+    // While a first filing runs, ask the Mac how far it has got every 2 seconds.
+    if (f && f.state === 'running' && !brainState.poll) {
+      brainState.poll = setInterval(function () {
+        brainFetch('/brain/summary').then(function (r) { if (r.ok) renderBrainSummary(r.body); }).catch(function () { /* try again next time */ });
+      }, 2000);
+    } else if (!(f && f.state === 'running') && brainState.poll) { clearInterval(brainState.poll); brainState.poll = null; }
+  }
+  function renderBrainSummary(s) {
+    s = s || {};
+    var last = s.last_batch && brainTime(s.last_batch.time);
+    el('brain-sentence').textContent = plural(s.total, 'file', 'files') + ' in your Brain. ' + (s.inbox ? num(s.inbox) + ' in Inbox.' : 'Nothing in Inbox.') + (last ? ' Last filed at ' + last + '.' : '');
+    renderFiling(s.filing);
+    var lines = (s.needs_permission ? [s.needs_permission] : []).concat(s.hints || []);
+    var needs = el('brain-needs');
+    needs.innerHTML = lines.length ? '<div class="card-title">Needs you</div>' + lines.map(function (l) { return '<div class="brain-hint">' + esc(l) + '</div>'; }).join('') : '';
+    needs.hidden = !lines.length;
+    var areasEl = el('brain-areas'), rows = s.areas || [];
+    areasEl.innerHTML = rows.length ? '<div class="card-title">Areas</div>' + rows.map(function (a) {
+      return '<button class="brain-area" data-brain-act="area" data-brain-val="' + esc(a.name) + '"><span class="item-name">' + esc(a.name) + '</span><span class="item-value">' + esc(plural(a.count, 'file', 'files') + (a.newest ? ' · newest: ' + a.newest.title : '')) + '</span></button>';
+    }).join('') : '';
+    areasEl.hidden = !rows.length;
+  }
+  function brainSearch(q) {
+    var mine = ++brainState.seq;
+    if (!q.trim()) { showResults([], []); return; }
+    if (q.length > 300) return;
+    brainFetch('/brain/search?q=' + encodeURIComponent(q)).then(function (r) {
+      if (mine === brainState.seq && r.ok) showResults(r.body.results || [], r.body.terms || [], 'Nothing matches that yet.');
+    }).catch(function () { if (mine === brainState.seq) el('brain-results').innerHTML = '<p class="brain-line">Can’t reach your Brain. Is BVOS running on this Mac?</p>'; });
+  }
+  function brainAsk(q) {
+    q = q.trim();
+    if (!q) return;
+    var mine = ++brainState.asking;
+    brainState.seq++;  // a search still in flight must not draw over the answer
+    el('brain-results').innerHTML = '';
+    el('brain-answer').innerHTML = '<p class="brain-source">Asking Gibbs…</p>';
+    brainFetch('/gibbs/ask', {q: q}).then(function (r) {
+      if (mine !== brainState.asking) return;
+      var a = r.body || {};
+      if (!r.ok) { el('brain-answer').innerHTML = '<p class="brain-big">' + esc(a.error || 'Gibbs couldn’t answer that.') + '</p>'; return; }
+      var src = a.source_line || (a.source === 'claude' ? 'From Claude' : '');
+      var links = (a.sources || []).map(function (s) { return '<button class="brain-link" data-brain-act="open" data-brain-val="' + esc(s.id) + '">' + esc(s.title) + '</button>'; }).join(', ');
+      el('brain-answer').innerHTML = '<p class="brain-big">' + esc(a.answer) + '</p>' + (src || links ? '<p class="brain-source">' + esc(src) + (src && links ? ' · ' : '') + links + '</p>' : '');
+    }).catch(function () { if (mine === brainState.asking) el('brain-answer').innerHTML = '<p class="brain-big">Can’t reach Gibbs. Is BVOS running on this Mac?</p>'; });
+  }
+  function brainWire() {
+    if (brainState.wired) return;
+    brainState.wired = true;
+    var timer = null, input = el('brain-q');
+    input.addEventListener('input', function () {
+      el('brain-answer').innerHTML = ''; brainState.asking++;
+      clearTimeout(timer);
+      timer = setTimeout(function () { brainSearch(input.value); }, 150);
+    });
+    el('brain-form').addEventListener('submit', function (event) { event.preventDefault(); clearTimeout(timer); brainAsk(input.value); });
+    el('brain').addEventListener('click', function (event) {
+      var t = event.target && event.target.closest ? event.target.closest('[data-brain-act]') : null;
+      if (!t) return;
+      var act = t.getAttribute('data-brain-act'), val = t.getAttribute('data-brain-val');
+      if (act === 'open') {
+        brainFetch('/brain/open', {id: Number(val)}).catch(function () { /* nothing to reveal */ });
+      } else if (act === 'area') {
+        brainState.seq++;
+        brainFetch('/brain/search?area=' + encodeURIComponent(val) + '&limit=20').then(function (r) {
+          if (r.ok) showResults(r.body.results || [], [], 'Nothing in ' + val + ' yet.');
+        }).catch(function () { /* the list stays as it was */ });
+      } else if (act === 'file') {
+        brainFetch('/brain/file', {}).then(function (r) {
+          if (r.ok) renderFiling({state: 'running', done: 0, total: null});
+        }).catch(function () { /* the card stays so Ben can try again */ });
+      } else if (act === 'undo') {
+        brainFetch('/brain/undo', {batch: val}).then(function () { return brainFetch('/brain/summary'); })
+          .then(function (r) { if (r.ok) renderBrainSummary(r.body); }).catch(function () { /* the card stays */ });
+      }
+    });
+  }
+  var BRAIN_PANEL = '<header class="page-head"><h1>Brain</h1></header><div class="brain" id="brain">' +
+    '<form class="brain-ask" id="brain-form" role="search"><input id="brain-q" type="search" name="q" placeholder="Ask Gibbs or search your Brain" aria-label="Ask Gibbs or search your Brain" autocomplete="off" maxlength="500"></form>' +
+    '<div class="brain-answer" id="brain-answer" aria-live="polite"></div><div id="brain-results"></div><p class="brain-line" id="brain-sentence"></p>' +
+    '<div class="brain-block" id="brain-filing" hidden></div><div class="brain-block" id="brain-needs" hidden></div><div class="brain-block" id="brain-areas" hidden></div></div>';
+  var BRAIN_ICON = '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M16.5 16.5L21 21M8 11h6M11 8v6"/></svg><span>Brain</span>';
+  // The Brain tab does not exist in the page itself. It is added here, only for data that says brain_live,
+  // so the BVOS app and every other copy of this page never have it.
+  function brainShell() {
+    if (el('tab-brain') && el('panel-brain')) return true;
+    var list = el('tablist'), system = el('panel-system');
+    if (!list || !system || !system.parentNode || !document.createElement) return false;
+    var tab = document.createElement('button');
+    tab.className = 'tab'; tab.id = 'tab-brain';
+    tab.setAttribute('role', 'tab'); tab.setAttribute('data-tab', 'brain'); tab.setAttribute('aria-controls', 'panel-brain');
+    tab.setAttribute('aria-selected', 'false'); tab.setAttribute('tabindex', '-1');
+    tab.innerHTML = BRAIN_ICON;
+    var panel = document.createElement('section');
+    panel.className = 'panel'; panel.id = 'panel-brain'; panel.hidden = true;
+    panel.setAttribute('role', 'tabpanel'); panel.setAttribute('aria-labelledby', 'tab-brain'); panel.setAttribute('tabindex', '0');
+    panel.innerHTML = BRAIN_PANEL;
+    list.appendChild(tab); system.parentNode.appendChild(panel);
+    wireTab('brain');
+    return true;
+  }
+  function renderBrain(data) {
+    var live = !!(data.brain_live && data.brain_summary);
+    if (live && !brainShell()) return;
+    var tab = el('tab-brain');
+    if (!tab || !el('brain')) return;
+    tab.hidden = !live;
+    var list = el('tablist');
+    if (list && list.style) list.style.setProperty('--tabs', areas.filter(shown).length);
+    if (!live) {
+      if (brainState.poll) { clearInterval(brainState.poll); brainState.poll = null; }
+      if (active === 'brain') activate('today', false, false);
+      return;
+    }
+    brainWire();
+    // The summary is rebuilt every refresh. The search box, results and answer are left as they are.
+    renderBrainSummary(data.brain_summary);
+    if (location.hash === '#brain' && active !== 'brain') activate('brain', false, false);
+  }
   // ---- Agents: who's building what (the tab is Mac-hub only; the System card is the short copy) ----
   var LABELS = {'codex':'Codex', 'antigravity':'Antigravity', 'antigravity-key':'Antigravity', 'claude':'Claude Code'};
   function objects(list) { return Array.isArray(list) ? list.filter(function (x) { return x && typeof x === 'object'; }) : []; }
@@ -724,7 +924,7 @@ details p { margin:14px 0 0; font-size:13px; color:var(--muted); }
   }
   function render(data) {
     setAgents(data);
-    renderTop(data); renderToday(data); renderCalendar(data); renderSchool(data); renderCareer(data); renderHealth(data); renderBoard(data); renderBuilds(data); renderAlerts(data);
+    renderTop(data); renderToday(data); renderCalendar(data); renderSchool(data); renderCareer(data); renderHealth(data); renderBoard(data); renderBuilds(data); renderAlerts(data); renderBrain(data);
     drawAgents(); renderAgentsCard(data);
     if (agentsLive && typeof location !== 'undefined' && location.hash === '#agents' && active !== 'agents') activate('agents', false, false);
     if (document.querySelectorAll) document.querySelectorAll('.panel').forEach(function(panel) {
