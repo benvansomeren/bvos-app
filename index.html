@@ -247,6 +247,18 @@ details p { margin:14px 0 0; font-size:13px; color:var(--muted); }
   *,*::before,*::after { animation:none !important; transition:none !important; scroll-behavior:auto !important; }
   ::view-transition-old(root),::view-transition-new(root) { animation:none !important; }
 }
+.health-metrics .tile { padding:12px; min-width:0; }
+.health-metrics .figure-num { font-size:clamp(24px,4vw,40px); }
+.health-text { white-space:pre-wrap; overflow-wrap:anywhere; line-height:1.6; }
+.health-dot[data-color="yellow"] { background:var(--orange); }
+.health-dot[data-color="red"] { background:var(--red); }
+.health-dot[data-color="unknown"] { background:var(--muted); }
+.health-trend { display:grid; grid-template-columns:1fr 1fr 1fr; gap:12px; padding:12px 0; border-bottom:1px solid var(--line); overflow-wrap:anywhere; }
+.health-trend small { display:block; color:var(--muted); font-size:12px; margin-top:4px; }
+.health-todo,.health-draft { padding:12px 0; border-bottom:1px solid var(--line); }
+#health button { min-height:44px; margin-top:12px; padding:8px 16px; border:1px solid var(--line); border-radius:10px; background:var(--surface); }
+#health textarea { display:block; width:100%; box-sizing:border-box; margin-top:8px; padding:12px; resize:vertical; font:inherit; color:var(--text); background:var(--surface); border:1px solid var(--line); border-radius:10px; }
+#health-log-status { display:inline-block; margin-left:12px; font-size:13px; color:var(--muted); }
 </style>
 </head>
 <body>
@@ -531,9 +543,66 @@ details p { margin:14px 0 0; font-size:13px; color:var(--muted); }
     html += card('Your pipeline', pipeline, true);
     document.getElementById('career').innerHTML = html;
   }
+  var healthDrafts = [], healthLogText = '';
+  function healthText(text) { return '<div class="health-text">' + esc(text) + '</div>'; }
+  function healthMacCards(mac) {
+    var html = '', t = mac.today;
+    if (t) {
+      var color = ['green', 'yellow', 'red'].indexOf(t.color) >= 0 ? t.color : 'unknown';
+      html += card('Today', '<p><span class="dot health-dot" data-color="' + color + '"></span>' + esc(cap(color)) + ' · ' + esc(t.date || '') + '</p><h2>' + esc(t.lift) + '</h2><div class="metrics health-metrics">' + tile(t.recovery == null ? '—' : t.recovery, 'Recovery', '%') + tile(t.sleep_hours == null ? '—' : t.sleep_hours, 'Sleep', 'h') + tile(t.strain == null ? '—' : t.strain, 'Strain') + '</div>', true);
+    }
+    if (mac.trends) {
+      var metric = function(value, m) { return value == null ? 'Not enough data' : Number(value).toFixed(m.dec || 0) + (m.unit || ''); };
+      html += card('7-day trend', '<p class="secondary">Last 7 days compared with your prior 28 days.</p>' + (mac.trends.metrics || []).map(function(m) {
+        return '<div class="health-trend"><b>' + esc(m.label) + '</b><span>' + esc(metric(m.recent_avg, m)) + '<small>7-day average</small></span><span>' + esc(metric(m.base_avg, m)) + '<small>Your normal</small></span></div>';
+      }).join(''), true);
+    }
+    if ((mac.todos || []).length) html += card('To-dos', mac.todos.map(function(todo) {
+      return '<div class="health-todo"><p>' + esc(todo.title) + '</p>' + (todo.how.length ? '<details data-expand><summary>How to do it</summary>' + todo.how.map(healthText).join('') + '</details>' : '') + '</div>';
+    }).join(''));
+    healthDrafts = mac.drafts || [];
+    if (healthDrafts.length) html += card('Drafts', healthDrafts.map(function(draft, i) {
+      return '<div class="health-draft"><h3>' + esc(draft.title) + '</h3>' + healthText(draft.message) + '<button type="button" data-health-copy="' + i + '">Copy</button></div>';
+    }).join(''), false, 'Copy a draft, then send it yourself.');
+    if (mac.weekly) html += card('This week', healthText(mac.weekly), true);
+    if (mac.program) html += card('Program', healthText(mac.program), true);
+    html += card('Log', '<form id="health-log-form"><label for="health-log-text">Add a note</label><textarea id="health-log-text" maxlength="1000" required rows="3">' + esc(healthLogText) + '</textarea><button type="submit">Save</button><span id="health-log-status" role="status" aria-live="polite"></span></form>', true);
+    return html;
+  }
+  if (document.addEventListener) {
+    document.addEventListener('input', function(event) {
+      if (event.target.id === 'health-log-text') healthLogText = event.target.value;
+    });
+    document.addEventListener('click', function(event) {
+      var button = event.target.closest('[data-health-copy]');
+      if (!button) return;
+      var draft = healthDrafts[Number(button.dataset.healthCopy)];
+      if (!draft) return;
+      if (typeof navigator === 'undefined' || !navigator.clipboard) { button.textContent = 'Select text to copy'; return; }
+      navigator.clipboard.writeText(draft.message).then(function() { button.textContent = 'Copied'; }, function() { button.textContent = 'Select text to copy'; });
+    });
+    document.addEventListener('submit', function(event) {
+      if (event.target.id !== 'health-log-form') return;
+      event.preventDefault();
+      var input = document.getElementById('health-log-text'), note = document.getElementById('health-log-status');
+      var button = event.target.querySelector('button'), text = input.value;
+      if (!text.trim() || text.length > 1000) { note.textContent = 'Use 1 to 1,000 characters.'; return; }
+      button.disabled = true;
+      note.textContent = 'Saving…';
+      fetch('/health/log', {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({text: text})})
+        .then(function(response) {
+          if (!response.ok) throw new Error('save');
+          if (input.value === text) { input.value = ''; healthLogText = ''; }
+          note.textContent = 'Saved.';
+        }).catch(function() { note.textContent = 'Could not save. Try again on the Mac hub.'; })
+        .finally(function() { button.disabled = false; });
+    });
+  }
   function renderHealth(data) {
     var h = data.health || {}, training = h.training || {};
     var html = card('Training', '<div class="figure-num">' + esc(cap(training.next || 'rest')) + '</div><p class="secondary">Next lift' + (training.last ? ' · Last: ' + esc(cap(training.last)) : '') + '</p><div class="rotation">' + ['push','pull','legs'].map(function(k) {return '<span class="' + (training.next === k ? 'next' : '') + '">' + cap(k) + '</span>';}).join('') + '</div>', true);
+    healthDrafts = [];
+    if (!data.app && data.health_mac) html = healthMacCards(data.health_mac);
     // App data contains training only; never create its Mac-only sections in the DOM.
     if (!data.app && ('appointments' in h || 'health_notes' in data)) {
       if (h.recovery || h.sleep) html += card('Daily check', (h.recovery ? '<p>Recovery · ' + esc(h.recovery.score == null ? cap(h.recovery.color) : h.recovery.score + '%') + '</p>' : '') + (h.sleep ? '<p>Sleep · ' + esc(h.sleep.hours) + ' h</p>' : ''), true);
