@@ -155,6 +155,20 @@ details p { margin:14px 0 0; font-size:13px; color:var(--muted); }
 .brain-area { display:flex; justify-content:space-between; gap:16px; align-items:baseline; width:100%; text-align:left; padding:14px 6px; border:0; border-top:1px solid var(--line); background:transparent; border-radius:0; }
 .brain-area:hover { background:var(--well); }
 .brain-area .item-value { min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.top3-list { list-style:none; padding:0; margin:0; }
+.top3-row { display:grid; grid-template-columns:36px minmax(0,1fr) auto; gap:16px; padding:18px 0; border-top:1px solid var(--line); align-items:start; }
+.top3-row:first-child { border-top:0; padding-top:4px; }
+.top3-rank { font-size:32px; line-height:1.2; font-weight:650; color:var(--muted); }
+.top3-what { font-size:24px; line-height:1.3; font-weight:600; overflow-wrap:anywhere; }
+.top3-why, .top3-asof { color:var(--muted); font-size:14px; margin:5px 0; }
+.top3-step { margin:8px 0 0; font-size:15px; overflow-wrap:anywhere; }
+.top3-actions { display:flex; flex-wrap:wrap; gap:8px; align-items:center; }
+.top3-actions button, .top3-actions a { min-height:44px; padding:10px 14px; border-radius:10px; border:1px solid var(--line); color:var(--text); background:var(--surface); font:inherit; cursor:pointer; text-decoration:none; }
+@media (max-width:600px) {
+  .top3-row { grid-template-columns:28px minmax(0,1fr); gap:10px; }
+  .top3-what { font-size:21px; }
+  .top3-actions { grid-column:2; }
+}
 #agents-card, #alerts-card { margin-bottom:18px; }
 .agents-line { grid-column:1 / -1; margin:0; font-size:13px; color:var(--muted); }
 .agents-hero { grid-column:1 / -1; padding:0 0 4px; }
@@ -388,6 +402,40 @@ details p { margin:14px 0 0; font-size:13px; color:var(--muted); }
     if (c === 95 || c === 96 || c === 99) return '<svg class="weather-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M19 16.9A5 5 0 0 0 18 7h-1.26a8 8 0 1 0-11.62 9"/><polyline points="13 11 9 17 15 17 11 23"/></svg>';
     return '<svg class="weather-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 16.58A5 5 0 0 0 18 7h-1.26A8 8 0 1 0 4 15.25"/><path d="M8 19v2m8-2v2m-4-1v2"/></svg>';
   }
+  var top3Page = null, top3Timer = null, top3Request = 0;
+  function top3Card(data) {
+    var t = data.top3 || {items:[]}, live = data.top3_live === true;
+    var items = (t.items || []).slice(0,3);
+    var rows = items.map(function(item, i) {
+      var link = typeof item.link === 'string' && /^https?:\/\//i.test(item.link) ? item.link : '';
+      return '<li class="top3-row"><span class="top3-rank">' + (i + 1) + '</span><div><div class="top3-what">' + esc(item.what) +
+        '</div><p class="top3-why">' + esc(item.why) + '</p><p class="top3-step">' + esc(item.first_step) + '</p></div>' +
+        (live ? '<div class="top3-actions"><button type="button" data-top3-done="' + esc(item.id) + '">Done</button>' +
+         (link ? '<a href="' + esc(link) + '" target="_blank" rel="noopener noreferrer">Open</a>' : '') + '</div>' : '') + '</li>';
+    }).join('');
+    return card('Top 3', (!live && t.as_of ? '<p class="top3-asof">as of ' + esc(t.as_of) + '</p>' : '') +
+      (items.length ? '<ol class="top3-list">' + rows + '</ol>' : empty("Nothing urgent. You're clear.")) +
+      (t.now_note ? '<p class="top3-why">' + esc(t.now_note) + '</p>' : '') +
+      (t.sync_error ? '<p role="status">' + esc(t.sync_error) + '</p>' : ''), true);
+  }
+  function pollTop3() {
+    if (!top3Page || top3Page.top3_live !== true || document.hidden || typeof fetch !== 'function') return;
+    var request = ++top3Request;
+    fetch('top3' + keyQuery(), {cache:'no-store'})
+      .then(function(r) { if (!r.ok) throw new Error(r.status); return r.json(); })
+      .then(function(data) { if (request === top3Request) { top3Page.top3 = data; renderToday(top3Page); } })
+      .catch(function() {});
+  }
+  if (document.addEventListener) document.addEventListener('click', function(event) {
+    var button = event.target && event.target.closest && event.target.closest('[data-top3-done]');
+    if (!button || button.disabled || !top3Page || top3Page.top3_live !== true) return;
+    button.disabled = true;
+    var request = ++top3Request;
+    fetch('top3/done' + keyQuery(), {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({id:button.dataset.top3Done})})
+      .then(function(r) { if (!r.ok) throw new Error(r.status); return r.json(); })
+      .then(function(data) { if (request === top3Request) { top3Page.top3 = data; renderToday(top3Page); } })
+      .catch(function() { button.disabled = false; button.textContent = 'Try Done again'; });
+  });
   function renderToday(data) {
     var o = data.overview || {}, due = o.next_deadline, items = (data.today || []).slice();
     items.sort(function (a,b) { return Number(b.area === 'Plan') - Number(a.area === 'Plan'); });
@@ -427,7 +475,7 @@ details p { margin:14px 0 0; font-size:13px; color:var(--muted); }
         dueLabel = 'days to next deadline';
       }
     }
-    var html = (agentsLive && sentence() ? '<p class="agents-line" id="agents-line">' + esc(sentence()) + '</p>' : '') +
+    var html = top3Card(data) + (agentsLive && sentence() ? '<p class="agents-line" id="agents-line">' + esc(sentence()) + '</p>' : '') +
       '<div class="metrics' + (weatherTile ? ' has-weather' : '') + '">' +
       weatherTile +
       tile(dueVal, dueLabel) +
@@ -923,6 +971,9 @@ details p { margin:14px 0 0; font-size:13px; color:var(--muted); }
     if (down.length && banner) banner.innerHTML = '<button class="banner" data-system>' + esc(down.length + (down.length === 1 ? ' thing needs a fix.' : ' things need a fix.')) + ' Open System <span aria-hidden="true">→</span></button>' + banner.innerHTML;
   }
   function render(data) {
+    top3Page = data;
+    ++top3Request;
+    if (data.top3_live === true && !top3Timer && typeof setInterval === 'function') top3Timer = setInterval(pollTop3, 60000);
     setAgents(data);
     renderTop(data); renderToday(data); renderCalendar(data); renderSchool(data); renderCareer(data); renderHealth(data); renderBoard(data); renderBuilds(data); renderAlerts(data); renderBrain(data);
     drawAgents(); renderAgentsCard(data);
