@@ -164,6 +164,32 @@ details p { margin:14px 0 0; font-size:13px; color:var(--muted); }
 .top3-step { margin:8px 0 0; font-size:15px; overflow-wrap:anywhere; }
 .top3-actions { display:flex; flex-wrap:wrap; gap:8px; align-items:center; }
 .top3-actions button, .top3-actions a { min-height:44px; padding:10px 14px; border-radius:10px; border:1px solid var(--line); color:var(--text); background:var(--surface); font:inherit; cursor:pointer; text-decoration:none; }
+.gibbs-talk { text-align:center; }
+.gibbs-orb { position:relative; width:180px; height:180px; margin:12px auto 32px; border-radius:50%; border:1px solid var(--inner); background:radial-gradient(circle at 30% 24%,rgba(255,255,255,.85),transparent 44%),radial-gradient(circle at 70% 80%,rgba(100,80,235,.45),transparent 65%),var(--accent-soft); box-shadow:inset 0 0 30px rgba(255,255,255,.35),0 12px 48px var(--wash); }
+.gibbs-orb::before,.gibbs-orb::after { content:""; position:absolute; inset:12px; border-radius:50%; border:1px solid var(--inner); pointer-events:none; }
+.gibbs-orb::after { inset:-7px; border:2px solid transparent; border-top-color:var(--accent); opacity:0; }
+.gibbs-orb[data-state="idle"] { animation:gibbs-breathe 6s ease-in-out infinite; }
+.gibbs-orb[data-state="listening"]::before { animation:gibbs-pulse 1.8s ease-in-out infinite; }
+.gibbs-orb[data-state="working"]::after { opacity:1; animation:gibbs-turn 2s linear infinite; }
+.gibbs-orb[data-state="speaking"]::before { animation:gibbs-wave 1.4s ease-in-out infinite; }
+@keyframes gibbs-breathe { 0%,100% { transform:scale(.96); opacity:.8; } 50% { transform:scale(1); opacity:1; } }
+@keyframes gibbs-pulse { 0%,100% { transform:scale(.9); opacity:.4; } 50% { transform:scale(1.12); opacity:1; } }
+@keyframes gibbs-turn { to { transform:rotate(360deg); } }
+@keyframes gibbs-wave { 0%,100% { transform:scale(1,.84); opacity:.5; } 50% { transform:scale(.88,1.06); opacity:1; } }
+.gibbs-form { display:flex; gap:10px; text-align:left; }
+.gibbs-form input { flex:1; min-width:0; padding:12px 14px; border:1px solid var(--line); border-radius:12px; background:var(--well); color:var(--text); font:inherit; }
+.gibbs-form button,.gibbs-asks button { min-height:44px; padding:10px 16px; border:1px solid var(--line); border-radius:12px; background:var(--surface); }
+.gibbs-form button { background:var(--accent); color:white; }
+.gibbs-form button:disabled,.gibbs-asks button:disabled { opacity:.5; cursor:wait; }
+.gibbs-asks { display:flex; flex-wrap:wrap; justify-content:center; gap:8px; margin-top:16px; }
+.gibbs-asks button { border-radius:24px; font-size:14px; }
+.gibbs-status,.gibbs-source { color:var(--muted); font-size:13px; }
+.gibbs-status:empty { display:none; }
+.gibbs-answer { border-top:1px solid var(--line); padding:20px 0 0; margin-top:20px; text-align:left; }
+.gibbs-answer p { margin:0 0 8px; white-space:pre-wrap; overflow-wrap:anywhere; }
+.gibbs-files { color:var(--muted); font-size:14px; padding-left:20px; }
+@media (max-width:899px) { #tab-gibbs,#panel-gibbs { display:none !important; } }
+@media (prefers-reduced-motion:reduce) { .gibbs-orb,.gibbs-orb::before,.gibbs-orb::after { animation:none !important; } }
 @media (max-width:600px) {
   .top3-row { grid-template-columns:28px minmax(0,1fr); gap:10px; }
   .top3-what { font-size:21px; }
@@ -279,6 +305,26 @@ details p { margin:14px 0 0; font-size:13px; color:var(--muted); }
   <main>
     <div id="banner" aria-live="polite"></div>
     <div class="panels">
+      <section class="panel" id="panel-gibbs" role="tabpanel" aria-labelledby="tab-gibbs" tabindex="0" hidden>
+        <header class="page-head"><h1>Gibbs</h1></header>
+        <div class="content-grid">
+          <article class="card wide gibbs-talk">
+            <div class="gibbs-orb" id="gibbs-orb" data-state="idle" role="img" aria-label="Gibbs: idle"></div>
+            <form class="gibbs-form" id="gibbs-form">
+              <input id="gibbs-q" type="text" maxlength="500" aria-label="Ask Gibbs" placeholder="Ask Gibbs anything…" autocomplete="off" required>
+              <button type="submit" id="gibbs-send">Send</button>
+            </form>
+            <div class="gibbs-asks" aria-label="Quick asks">
+              <button type="button" data-gibbs-ask="What's my #1?">What's my #1?</button>
+              <button type="button" data-gibbs-ask="What's due this week?">What's due this week?</button>
+              <button type="button" data-gibbs-ask="Weather at 5 pm?">Weather at 5 pm?</button>
+            </div>
+            <p class="gibbs-status" id="gibbs-status" role="status"></p>
+            <div id="gibbs-answers" aria-live="polite" aria-relevant="additions"></div>
+          </article>
+          <div class="wide" id="gibbs-top3"></div>
+        </div>
+      </section>
       <section class="panel" id="panel-today" role="tabpanel" aria-labelledby="tab-today" tabindex="0"><header class="page-head"><h1>Today</h1></header><div class="content-grid" id="today"></div></section>
       <section class="panel" id="panel-agents" role="tabpanel" aria-labelledby="tab-agents" tabindex="0" hidden><header class="page-head"><h1>Agents</h1></header><div class="content-grid" id="agents"></div></section>
       <section class="panel" id="panel-school" role="tabpanel" aria-labelledby="tab-school" tabindex="0" hidden><header class="page-head"><h1>School</h1></header><div class="content-grid" id="school"></div></section>
@@ -294,8 +340,8 @@ details p { margin:14px 0 0; font-size:13px; color:var(--muted); }
 (function () {
   "use strict";
   var REFRESH_MS = 5 * 60 * 1000;
-  var areas = ["today", "agents", "school", "career", "health", "calendar", "system", "brain"];
-  // The Agents and Brain tabs are only on this Mac's own page (agents_live, brain_live); every other tab is always there.
+  var areas = ["gibbs", "today", "agents", "school", "career", "health", "calendar", "system", "brain"];
+  // Gibbs, Agents and Brain are enabled by this Mac's page data.
   function shown(id) { var tab = document.getElementById('tab-' + id); return !!tab && !tab.hidden; }
   var active = null, previousStatus = {};
   var agentsFeed = null, agentsLive = false, hubSilent = false, runNote = '', agentsHtml = '', agentsTimer = null;
@@ -448,7 +494,74 @@ details p { margin:14px 0 0; font-size:13px; color:var(--muted); }
       .then(function(data) { if (request === top3Request) { top3Page.top3 = data; renderToday(top3Page); } })
       .catch(function() { button.disabled = false; button.textContent = 'Try Done again'; });
   });
+  var gibbsEnabled = false, gibbsBusy = false, gibbsAnswers = [];
+  var gibbsDesktop = window.matchMedia && window.matchMedia('(min-width: 900px)');
+  function gibbsVisibility() {
+    var enabled = gibbsEnabled && gibbsDesktop && gibbsDesktop.matches && !window.BVOS_APP;
+    var tab = document.getElementById('tab-gibbs');
+    // Like Brain, create this Mac-only navigation item only when enabled.
+    if (!tab && enabled) {
+      var list = document.getElementById('tablist');
+      tab = document.createElement('button');
+      tab.className = 'tab'; tab.id = 'tab-gibbs';
+      tab.setAttribute('data-tab', 'gibbs');
+      tab.setAttribute('aria-controls', 'panel-gibbs');
+      tab.setAttribute('aria-selected', 'false'); tab.setAttribute('tabindex', '-1');
+      tab.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><ellipse cx="12" cy="12" rx="4" ry="9"/></svg><span>Gibbs</span>';
+      list.insertBefore(tab, document.getElementById('tab-today'));
+      wireTab('gibbs');
+    }
+    if (!tab) return;
+    tab.hidden = !enabled;
+    tab.setAttribute('role', 'tab');
+    if (active === 'gibbs' && tab.hidden) activate('today', false, false);
+    else if (active) activate(active, false, false);
+  }
+  if (gibbsDesktop && gibbsDesktop.addEventListener) gibbsDesktop.addEventListener('change', gibbsVisibility);
+  function gibbsWorking(working) {
+    gibbsBusy = working;
+    var orb = document.getElementById('gibbs-orb');
+    orb.dataset.state = working ? 'working' : 'idle';
+    orb.setAttribute('aria-label', 'Gibbs: ' + orb.dataset.state);
+    document.getElementById('gibbs-send').disabled = working;
+  }
+  function gibbsAsk(question) {
+    var q = String(question || '').trim();
+    if (!shown('gibbs') || gibbsBusy || !q) return;
+    var status = document.getElementById('gibbs-status');
+    if (q.length > 500) { status.textContent = 'Keep the question under 500 characters.'; return; }
+    status.textContent = '';
+    gibbsWorking(true);
+    Promise.resolve().then(function () {
+      return fetch('/gibbs/ask', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({q:q})});
+    }).then(function (r) {
+      return r.json().then(function (a) {
+        if (!r.ok) { status.textContent = a.error || 'Couldn’t answer. Try again.'; return; }
+        if (!a || typeof a.answer !== 'string') throw new Error('No answer');
+        var source = a.source === 'brain' ? 'From your Brain' :
+          a.source === 'capture' || a.tier === 3 ? 'Saved' : a.source === 'claude' ? 'Claude Haiku' : 'From your data';
+        var files = Array.isArray(a.sources) ? a.sources.filter(function (f) { return f && f.title; }) : [];
+        gibbsAnswers.unshift('<div class="gibbs-answer"><p>' + esc(a.answer) + '</p><div class="gibbs-source">' + source + '</div>' +
+          (files.length ? '<ul class="gibbs-files">' + files.map(function (f) { return '<li>' + esc(f.title) + '</li>'; }).join('') + '</ul>' : '') + '</div>');
+        gibbsAnswers = gibbsAnswers.slice(0, 10);
+        document.getElementById('gibbs-answers').innerHTML = gibbsAnswers.join('');
+        var input = document.getElementById('gibbs-q');
+        if (input.value.trim() === q) input.value = '';
+      });
+    }).catch(function () { status.textContent = 'Gibbs runs on your Mac. Open the hub there.'; })
+      .then(function () { gibbsWorking(false); });
+  }
+  var gibbsForm = document.getElementById('gibbs-form');
+  if (gibbsForm) gibbsForm.addEventListener('submit', function (event) {
+    event.preventDefault(); gibbsAsk(document.getElementById('gibbs-q').value);
+  });
+  if (document.addEventListener) document.addEventListener('click', function (event) {
+    var chip = event.target && event.target.closest && event.target.closest('[data-gibbs-ask]');
+    if (chip) gibbsAsk(chip.dataset.gibbsAsk);
+  });
   function renderToday(data) {
+    var gibbsTop3 = document.getElementById('gibbs-top3');
+    if (gibbsTop3) gibbsTop3.innerHTML = top3Card(data);
     var o = data.overview || {}, due = o.next_deadline, items = (data.today || []).slice();
     items.sort(function (a,b) { return Number(b.area === 'Plan') - Number(a.area === 'Plan'); });
     var w = data.weather;
@@ -1043,6 +1156,9 @@ details p { margin:14px 0 0; font-size:13px; color:var(--muted); }
     top3Page = data;
     ++top3Request;
     if (data.top3_live === true && !top3Timer && typeof setInterval === 'function') top3Timer = setInterval(pollTop3, 60000);
+    gibbsEnabled = data.gibbs === true;
+    gibbsVisibility();
+    if (gibbsEnabled && shown('gibbs') && location.hash === '#gibbs') activate('gibbs', false, false);
     setAgents(data);
     renderTop(data); renderToday(data); renderCalendar(data); renderSchool(data); renderCareer(data); renderHealth(data); renderBoard(data); renderBuilds(data); renderAlerts(data); renderBrain(data);
     drawAgents(); renderAgentsCard(data);
