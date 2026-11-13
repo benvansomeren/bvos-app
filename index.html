@@ -165,7 +165,7 @@ details p { margin:14px 0 0; font-size:13px; color:var(--muted); }
 .top3-actions { display:flex; flex-wrap:wrap; gap:8px; align-items:center; }
 .top3-actions button, .top3-actions a { min-height:44px; padding:10px 14px; border-radius:10px; border:1px solid var(--line); color:var(--text); background:var(--surface); font:inherit; cursor:pointer; text-decoration:none; }
 .gibbs-talk { text-align:center; }
-.gibbs-orb { position:relative; width:180px; height:180px; margin:12px auto 32px; border-radius:50%; border:1px solid var(--inner); background:radial-gradient(circle at 30% 24%,rgba(255,255,255,.85),transparent 44%),radial-gradient(circle at 70% 80%,rgba(100,80,235,.45),transparent 65%),var(--accent-soft); box-shadow:inset 0 0 30px rgba(255,255,255,.35),0 12px 48px var(--wash); }
+.gibbs-orb { position:relative; display:flex; align-items:center; justify-content:center; padding:18px; width:180px; height:180px; margin:12px auto 32px; border-radius:50%; border:1px solid var(--inner); background:radial-gradient(circle at 30% 24%,rgba(255,255,255,.85),transparent 44%),radial-gradient(circle at 70% 80%,rgba(100,80,235,.45),transparent 65%),var(--accent-soft); box-shadow:inset 0 0 30px rgba(255,255,255,.35),0 12px 48px var(--wash); color:var(--muted); font-size:13px; font-weight:550; cursor:pointer; user-select:none; -webkit-user-select:none; }
 .gibbs-orb::before,.gibbs-orb::after { content:""; position:absolute; inset:12px; border-radius:50%; border:1px solid var(--inner); pointer-events:none; }
 .gibbs-orb::after { inset:-7px; border:2px solid transparent; border-top-color:var(--accent); opacity:0; }
 .gibbs-orb[data-state="idle"] { animation:gibbs-breathe 6s ease-in-out infinite; }
@@ -178,8 +178,9 @@ details p { margin:14px 0 0; font-size:13px; color:var(--muted); }
 @keyframes gibbs-wave { 0%,100% { transform:scale(1,.84); opacity:.5; } 50% { transform:scale(.88,1.06); opacity:1; } }
 .gibbs-form { display:flex; gap:10px; text-align:left; }
 .gibbs-form input { flex:1; min-width:0; padding:12px 14px; border:1px solid var(--line); border-radius:12px; background:var(--well); color:var(--text); font:inherit; }
-.gibbs-form button,.gibbs-asks button { min-height:44px; padding:10px 16px; border:1px solid var(--line); border-radius:12px; background:var(--surface); }
-.gibbs-form button { background:var(--accent); color:white; }
+.gibbs-form button,.gibbs-asks button,.gibbs-mute { min-height:44px; padding:10px 16px; border:1px solid var(--line); border-radius:12px; background:var(--surface); }
+.gibbs-form #gibbs-send { background:var(--accent); color:white; }
+.gibbs-mute[aria-pressed="true"] { background:var(--well); color:var(--muted); }
 .gibbs-form button:disabled,.gibbs-asks button:disabled { opacity:.5; cursor:wait; }
 .gibbs-asks { display:flex; flex-wrap:wrap; justify-content:center; gap:8px; margin-top:16px; }
 .gibbs-asks button { border-radius:24px; font-size:14px; }
@@ -313,6 +314,7 @@ details p { margin:14px 0 0; font-size:13px; color:var(--muted); }
             <form class="gibbs-form" id="gibbs-form">
               <input id="gibbs-q" type="text" maxlength="500" aria-label="Ask Gibbs" placeholder="Ask Gibbs anything…" autocomplete="off" required>
               <button type="submit" id="gibbs-send">Send</button>
+              <button type="button" class="gibbs-mute" id="gibbs-mute" aria-pressed="false" aria-label="Mute spoken answers">Sound on</button>
             </form>
             <div class="gibbs-asks" aria-label="Quick asks">
               <button type="button" data-gibbs-ask="What's my #1?">What's my #1?</button>
@@ -495,7 +497,22 @@ details p { margin:14px 0 0; font-size:13px; color:var(--muted); }
       .catch(function() { button.disabled = false; button.textContent = 'Try Done again'; });
   });
   var gibbsEnabled = false, gibbsBusy = false, gibbsAnswers = [];
+  var gibbsMuted = false, gibbsVoiceAvailable = true, gibbsHolding = false, gibbsInputFocused = false, gibbsRecorder = null, gibbsCurrentAudio = null;
   var gibbsDesktop = window.matchMedia && window.matchMedia('(min-width: 900px)');
+  function syncGibbsMuteButton() {
+    var btn = document.getElementById('gibbs-mute');
+    if (!btn) return;
+    btn.setAttribute('aria-pressed', gibbsMuted ? 'true' : 'false');
+    btn.textContent = gibbsMuted ? 'Muted' : 'Sound on';
+  }
+  function loadGibbsMute() {
+    try {
+      var saved = localStorage.getItem('bvos-gibbs-muted');
+      gibbsMuted = saved === 'true' || saved === '1';
+    } catch (_) { gibbsMuted = false; }
+    syncGibbsMuteButton();
+  }
+  loadGibbsMute();
   function gibbsVisibility() {
     var enabled = gibbsEnabled && gibbsDesktop && gibbsDesktop.matches && !window.BVOS_APP;
     var tab = document.getElementById('tab-gibbs');
@@ -518,14 +535,58 @@ details p { margin:14px 0 0; font-size:13px; color:var(--muted); }
     else if (active) activate(active, false, false);
   }
   if (gibbsDesktop && gibbsDesktop.addEventListener) gibbsDesktop.addEventListener('change', gibbsVisibility);
+  function gibbsSetState(state) {
+    var orb = document.getElementById('gibbs-orb');
+    if (!orb) return;
+    orb.dataset.state = state;
+    orb.setAttribute('aria-label', 'Gibbs: ' + state);
+  }
+  gibbsSetState('idle');
   function gibbsWorking(working) {
     gibbsBusy = working;
-    var orb = document.getElementById('gibbs-orb');
-    orb.dataset.state = working ? 'working' : 'idle';
-    orb.setAttribute('aria-label', 'Gibbs: ' + orb.dataset.state);
-    document.getElementById('gibbs-send').disabled = working;
+    gibbsSetState(working ? 'working' : 'idle');
+    var send = document.getElementById('gibbs-send');
+    if (send) send.disabled = working;
   }
-  function gibbsAsk(question) {
+  function gibbsSpeak(text) {
+    var AudioCtor = typeof Audio === 'function' ? Audio : (window && typeof window.Audio === 'function' ? window.Audio : null);
+    if (gibbsMuted || !gibbsVoiceAvailable || !AudioCtor || !text) return Promise.resolve();
+    return Promise.resolve().then(function () {
+      return fetch('/gibbs/speak', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({text:text})});
+    }).then(function (r) {
+      if (!r || r.status === 503) { gibbsVoiceAvailable = false; return; }
+      if (!r.ok || typeof r.blob !== 'function') return;
+      return r.blob().then(function (blob) {
+        var url = (typeof URL !== 'undefined' && URL.createObjectURL) ? URL.createObjectURL(blob) : '';
+        var audio = new AudioCtor(url);
+        gibbsCurrentAudio = audio;
+        gibbsSetState('speaking');
+        return new Promise(function (resolve) {
+          var done = false;
+          function finish() {
+            if (done) return;
+            done = true;
+            if (gibbsCurrentAudio === audio) gibbsCurrentAudio = null;
+            if (url && typeof URL !== 'undefined' && URL.revokeObjectURL) {
+              try { URL.revokeObjectURL(url); } catch (_) {}
+            }
+            resolve();
+          }
+          audio.onended = finish;
+          audio.onerror = finish;
+          if (audio.addEventListener) {
+            audio.addEventListener('ended', finish);
+            audio.addEventListener('error', finish);
+          }
+          try {
+            var p = audio.play();
+            if (p && typeof p.catch === 'function') p.catch(finish);
+          } catch (_) { finish(); }
+        });
+      });
+    }).catch(function () {});
+  }
+  function gibbsAsk(question, fromVoice) {
     var q = String(question || '').trim();
     if (!shown('gibbs') || gibbsBusy || !q) return;
     var status = document.getElementById('gibbs-status');
@@ -546,10 +607,128 @@ details p { margin:14px 0 0; font-size:13px; color:var(--muted); }
         gibbsAnswers = gibbsAnswers.slice(0, 10);
         document.getElementById('gibbs-answers').innerHTML = gibbsAnswers.join('');
         var input = document.getElementById('gibbs-q');
-        if (input.value.trim() === q) input.value = '';
+        if (!fromVoice && input.value.trim() === q) input.value = '';
+        return gibbsSpeak(a.answer);
       });
     }).catch(function () { status.textContent = 'Gibbs runs on your Mac. Open the hub there.'; })
       .then(function () { gibbsWorking(false); });
+  }
+  function gibbsMicBlocked() {
+    gibbsHolding = false;
+    gibbsBusy = false;
+    var orb = document.getElementById('gibbs-orb');
+    var status = document.getElementById('gibbs-status');
+    var send = document.getElementById('gibbs-send');
+    if (orb) {
+      orb.dataset.state = 'idle';
+      orb.textContent = 'Mic is off. Type instead.';
+      orb.setAttribute('aria-label', 'Mic is off. Type instead.');
+    }
+    if (status) status.textContent = 'Mic is off. Type instead.';
+    if (send) send.disabled = false;
+  }
+  function gibbsStartHold() {
+    if (!shown('gibbs') || gibbsBusy || gibbsHolding) return;
+    gibbsHolding = true;
+    var nav = (typeof navigator !== 'undefined' && navigator) || (window && window.navigator);
+    var Recorder = (typeof MediaRecorder === 'function' && MediaRecorder) || (window && window.MediaRecorder);
+    if (!nav || !nav.mediaDevices || typeof nav.mediaDevices.getUserMedia !== 'function' || !Recorder) {
+      gibbsMicBlocked();
+      return;
+    }
+    Promise.resolve().then(function () {
+      return nav.mediaDevices.getUserMedia({audio:true});
+    }).then(function (stream) {
+      if (!gibbsHolding) {
+        if (stream && stream.getTracks) stream.getTracks().forEach(function (t) { if (t && t.stop) t.stop(); });
+        return;
+      }
+      var orb = document.getElementById('gibbs-orb');
+      var status = document.getElementById('gibbs-status');
+      if (orb) orb.textContent = '';
+      if (status) status.textContent = '';
+      var mime = (Recorder.isTypeSupported && Recorder.isTypeSupported('audio/webm')) ? 'audio/webm' :
+        ((Recorder.isTypeSupported && Recorder.isTypeSupported('audio/mp4')) ? 'audio/mp4' : '');
+      var rec = mime ? new Recorder(stream, {mimeType:mime}) : new Recorder(stream);
+      var chunks = [];
+      rec.ondataavailable = function (e) { if (e && e.data && e.data.size > 0) chunks.push(e.data); };
+      rec.onstop = function () {
+        if (stream && stream.getTracks) stream.getTracks().forEach(function (t) { if (t && t.stop) t.stop(); });
+        if (!chunks.length) { gibbsWorking(false); return; }
+        gibbsWorking(true);
+        var ctype = (rec.mimeType || mime || 'audio/webm').split(';')[0];
+        var BlobCtor = (typeof Blob === 'function' && Blob) || (window && window.Blob);
+        var body = BlobCtor ? new BlobCtor(chunks, {type:ctype}) : chunks[0];
+        Promise.resolve().then(function () {
+          return fetch('/gibbs/listen', {method:'POST', headers:{'Content-Type':ctype}, body:body});
+        }).then(function (r) {
+          if (!r || r.status === 503) { gibbsVoiceAvailable = false; gibbsWorking(false); return; }
+          if (!r.ok) { if (status) status.textContent = 'Couldn’t hear that. Try again or type.'; gibbsWorking(false); return; }
+          return r.json().then(function (d) {
+            var heard = d && typeof d.text === 'string' ? d.text.trim() : '';
+            if (!heard) { gibbsWorking(false); return; }
+            var input = document.getElementById('gibbs-q');
+            if (input) input.value = heard;
+            gibbsBusy = false;
+            gibbsAsk(heard, true);
+          });
+        }).catch(function () { gibbsWorking(false); });
+      };
+      gibbsRecorder = rec;
+      rec.start();
+      gibbsSetState('listening');
+    }).catch(function () { gibbsMicBlocked(); });
+  }
+  function gibbsEndHold() {
+    if (!gibbsHolding) return;
+    gibbsHolding = false;
+    if (gibbsRecorder && gibbsRecorder.state === 'recording') {
+      var rec = gibbsRecorder;
+      gibbsRecorder = null;
+      gibbsSetState('working');
+      rec.stop();
+    }
+  }
+  var gibbsOrb = document.getElementById('gibbs-orb');
+  if (gibbsOrb) {
+    gibbsOrb.addEventListener('mousedown', function (event) { if (event && event.preventDefault) event.preventDefault(); gibbsStartHold(); });
+    gibbsOrb.addEventListener('mouseup', function (event) { if (event && event.preventDefault) event.preventDefault(); gibbsEndHold(); });
+    gibbsOrb.addEventListener('mouseleave', function () { gibbsEndHold(); });
+    gibbsOrb.addEventListener('touchstart', function (event) { if (event && event.preventDefault) event.preventDefault(); gibbsStartHold(); });
+    gibbsOrb.addEventListener('touchend', function (event) { if (event && event.preventDefault) event.preventDefault(); gibbsEndHold(); });
+  }
+  var gibbsInput = document.getElementById('gibbs-q');
+  if (gibbsInput) {
+    gibbsInput.addEventListener('focus', function () { gibbsInputFocused = true; });
+    gibbsInput.addEventListener('blur', function () { gibbsInputFocused = false; });
+  }
+  var gibbsMuteBtn = document.getElementById('gibbs-mute');
+  if (gibbsMuteBtn) {
+    gibbsMuteBtn.addEventListener('click', function () {
+      gibbsMuted = !gibbsMuted;
+      try { localStorage.setItem('bvos-gibbs-muted', gibbsMuted ? 'true' : 'false'); } catch (_) {}
+      if (gibbsMuted && gibbsCurrentAudio) {
+        try { gibbsCurrentAudio.pause(); } catch (_) {}
+        gibbsCurrentAudio = null;
+        if (!gibbsBusy) gibbsSetState('idle');
+      }
+      syncGibbsMuteButton();
+    });
+  }
+  if (document.addEventListener) {
+    document.addEventListener('keydown', function (event) {
+      if (!event || (event.key !== ' ' && event.code !== 'Space') || event.repeat) return;
+      if (gibbsInputFocused || event.target === gibbsInput || (event.target && (event.target.tagName === 'INPUT' || event.target.tagName === 'TEXTAREA'))) return;
+      if (!shown('gibbs')) return;
+      if (event.preventDefault) event.preventDefault();
+      gibbsStartHold();
+    });
+    document.addEventListener('keyup', function (event) {
+      if (!event || (event.key !== ' ' && event.code !== 'Space')) return;
+      if (!gibbsHolding) return;
+      if (event.preventDefault) event.preventDefault();
+      gibbsEndHold();
+    });
   }
   var gibbsForm = document.getElementById('gibbs-form');
   if (gibbsForm) gibbsForm.addEventListener('submit', function (event) {
@@ -1157,6 +1336,8 @@ details p { margin:14px 0 0; font-size:13px; color:var(--muted); }
     ++top3Request;
     if (data.top3_live === true && !top3Timer && typeof setInterval === 'function') top3Timer = setInterval(pollTop3, 60000);
     gibbsEnabled = data.gibbs === true;
+    gibbsVoiceAvailable = true;
+    loadGibbsMute();
     gibbsVisibility();
     if (gibbsEnabled && shown('gibbs') && location.hash === '#gibbs') activate('gibbs', false, false);
     setAgents(data);
