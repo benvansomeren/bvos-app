@@ -1281,7 +1281,10 @@ details p { margin:14px 0 0; font-size:13px; color:var(--muted); }
     if (minutes < 1440) return Math.floor(minutes / 60) + ' h ago';
     return Math.floor(minutes / 1440) + ' d ago';
   }
-  function sentence() { return agentsFeed && agentsFeed.left && agentsFeed.left.line ? String(agentsFeed.left.line) : ''; }
+  function sentence() {
+    var summary = agentsFeed && (agentsFeed.eta || agentsFeed.left);
+    return summary && summary.line ? String(summary.line) : '';
+  }
   function whatLine(text) { return text ? '<div class="what">' + esc(text) + '</div>' : ''; }
   function numbered(number, title) { return '<span class="build-num">' + esc(number) + '</span> ' + esc(title); }
   function prLink(value) {
@@ -1410,7 +1413,7 @@ details p { margin:14px 0 0; font-size:13px; color:var(--muted); }
     if (cardEl.hidden) { cardEl.innerHTML = ''; return; }
     var ref = data.generated, line = function (text) { return '<p class="builder">' + esc(text) + '</p>'; };
     var needs = objects(copy.needs_ben), queue = objects(copy.queue).slice(0, 3);
-    cardEl.innerHTML = head('Agents') + objects(copy.lanes).map(function (lane) { return line(laneLine(lane, ref)); }).join('') +
+    cardEl.innerHTML = head('Agents') + (copy.eta && copy.eta.line ? line(copy.eta.line) : '') + objects(copy.lanes).map(function (lane) { return line(laneLine(lane, ref)); }).join('') +
       (needs.length ? '<div class="sub-head">Needs you</div>' + needs.map(function (n) { return line(n.number + ' · ' + n.title + ': ' + (n.why || n.state || '')); }).join('') : '') +
       (queue.length ? '<div class="sub-head">Up next</div>' + queue.map(function (q) { return line(q.number + ' · ' + q.title); }).join('') : '');
   }
