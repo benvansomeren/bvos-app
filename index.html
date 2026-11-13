@@ -185,6 +185,15 @@ details p { margin:14px 0 0; font-size:13px; color:var(--muted); }
 .gibbs-asks { display:flex; flex-wrap:wrap; justify-content:center; gap:8px; margin-top:16px; }
 .gibbs-asks button { border-radius:24px; font-size:14px; }
 .gibbs-status,.gibbs-source { color:var(--muted); font-size:13px; }
+.claude-usage { color:var(--muted); font-size:13px; }
+.claude-usage.limited { color:#b7791f; }
+.gibbs-job { display:flex; gap:12px; align-items:center; flex-wrap:wrap; padding:14px 0; border-top:1px solid var(--line); }
+.gibbs-job-title { flex:1; min-width:140px; overflow-wrap:anywhere; }
+.gibbs-job-state { font-size:13px; padding:5px 10px; border:1px solid var(--line); border-radius:20px; }
+.gibbs-job button { min-height:44px; padding:8px 16px; border-radius:22px; background:var(--surface); border:1px solid var(--line); }
+#gibbs-report { width:min(680px,90vw); max-height:80vh; border:1px solid var(--line); border-radius:24px; padding:24px; background:var(--surface); color:var(--text); }
+#gibbs-report::backdrop { background:rgba(0,0,0,.4); }
+#gibbs-report-text { white-space:pre-wrap; overflow-wrap:anywhere; font:inherit; }
 .gibbs-status:empty { display:none; }
 .gibbs-answer { border-top:1px solid var(--line); padding:20px 0 0; margin-top:20px; text-align:left; }
 .gibbs-answer p { margin:0 0 8px; white-space:pre-wrap; overflow-wrap:anywhere; }
@@ -311,11 +320,13 @@ details p { margin:14px 0 0; font-size:13px; color:var(--muted); }
         <div class="content-grid">
           <article class="card wide gibbs-talk">
             <div class="gibbs-orb" id="gibbs-orb" data-state="idle" role="img" aria-label="Gibbs: idle"></div>
+            <p id="claude-usage" class="claude-usage"></p>
             <form class="gibbs-form" id="gibbs-form">
               <input id="gibbs-q" type="text" maxlength="500" aria-label="Ask Gibbs" placeholder="Ask Gibbs anything…" autocomplete="off" required>
               <button type="submit" id="gibbs-send">Send</button>
               <button type="button" class="gibbs-mute" id="gibbs-mute" aria-pressed="false" aria-label="Mute spoken answers">Sound on</button>
             </form>
+            <div class="gibbs-asks" id="gibbs-buttons" aria-label="Skills"></div>
             <div class="gibbs-asks" aria-label="Quick asks">
               <button type="button" data-gibbs-ask="What's my #1?">What's my #1?</button>
               <button type="button" data-gibbs-ask="What's due this week?">What's due this week?</button>
@@ -324,6 +335,8 @@ details p { margin:14px 0 0; font-size:13px; color:var(--muted); }
             <p class="gibbs-status" id="gibbs-status" role="status"></p>
             <div id="gibbs-answers" aria-live="polite" aria-relevant="additions"></div>
           </article>
+          <article class="card wide"><h2>Jobs</h2><div id="gibbs-jobs"></div></article>
+          <dialog id="gibbs-report" aria-label="Job report"><form method="dialog"><button>Close</button></form><pre id="gibbs-report-text"></pre></dialog>
           <div class="wide" id="gibbs-top3"></div>
         </div>
       </section>
@@ -608,10 +621,92 @@ details p { margin:14px 0 0; font-size:13px; color:var(--muted); }
         document.getElementById('gibbs-answers').innerHTML = gibbsAnswers.join('');
         var input = document.getElementById('gibbs-q');
         if (!fromVoice && input.value.trim() === q) input.value = '';
+        if (a.tier === 3) gibbsPollJobs();
         return gibbsSpeak(a.answer);
       });
     }).catch(function () { status.textContent = 'Gibbs runs on your Mac. Open the hub there.'; })
       .then(function () { gibbsWorking(false); });
+  }
+  var gibbsJobsTimer = null, gibbsJobStates = {}, gibbsJobsLoaded = false;
+  function gibbsUsage(usage) {
+    var el = document.getElementById('claude-usage');
+    if (!el) return;
+    el.textContent = usage && usage.line || '';
+    el.className = 'claude-usage' + (usage && usage.limited ? ' limited' : '');
+  }
+  function gibbsJobTime(value) {
+    // Worker timestamps without offsets are already Chicago wall time.
+    var naive = typeof value === 'string' && !/(Z|[+-]\d\d:\d\d)$/.test(value);
+    var date = new Date(naive ? value+'Z' : value), now = new Date();
+    if (isNaN(date.getTime())) return '';
+    var zone = naive ? 'UTC' : 'America/Chicago';
+    var day = function(d, tz) {
+      var parts = new Intl.DateTimeFormat('en-US', {timeZone:tz, year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',hourCycle:'h23'}).formatToParts(d);
+      var fields = {}; parts.forEach(function(p) {fields[p.type]=p.value;});
+      return Date.UTC(+fields.year,+fields.month-1,+fields.day-(+fields.hour < 4 ? 1 : 0));
+    };
+    if (day(date, zone) === day(now, 'America/Chicago')-86400000) return 'yesterday';
+    return date.toLocaleTimeString('en-US', {timeZone:zone,hour:'numeric',minute:'2-digit',hour12:true}).toLowerCase();
+  }
+  function gibbsRenderJobs(jobs, announce) {
+    var el = document.getElementById('gibbs-jobs');
+    if (!el) return;
+    var labels = {queued:'Queued',running:'Working',waiting:'Waiting for Claude',done:'Done',failed:'Failed',stopped:'Stopped'};
+    var running = false;
+    el.innerHTML = jobs.slice(0,5).map(function(job) {
+      var live = ['queued','running','waiting'].indexOf(job.state) >= 0;
+      running = running || live;
+      if (announce && gibbsJobsLoaded && gibbsJobStates[job.id] && gibbsJobStates[job.id] !== 'done' && job.state === 'done' && active === 'gibbs' && !document.hidden) gibbsSpeak((job.request || 'Job') + ' is done');
+      gibbsJobStates[job.id] = job.state;
+      return '<div class="gibbs-job"><span class="gibbs-job-title">'+esc(job.request || 'Job')+'</span><span class="gibbs-job-state">'+esc(labels[job.state] || job.state)+'</span><time>'+esc(gibbsJobTime(job.ended || job.queued))+'</time>' +
+        (job.state === 'done' ? '<button data-gibbs-report="'+esc(job.id)+'">Open</button>' : live ? '<button data-gibbs-stop="'+esc(job.id)+'">Stop</button>' : '')+'</div>';
+    }).join('') || '<p class="muted">No jobs yet.</p>';
+    gibbsJobsLoaded = true;
+    if (running && !gibbsJobsTimer && typeof setInterval === 'function') gibbsJobsTimer = setInterval(gibbsPollJobs, 10000);
+    if (!running && gibbsJobsTimer) { clearInterval(gibbsJobsTimer); gibbsJobsTimer = null; }
+  }
+  function gibbsPollJobs() {
+    if (!gibbsEnabled || window.BVOS_APP || !shown('gibbs')) return Promise.resolve();
+    return fetch('/gibbs/jobs').then(function(r) { if (!r.ok) throw Error(); return r.json(); }).then(function(data) {
+      gibbsRenderJobs(data.jobs || [], true); gibbsUsage(data.claude_usage);
+    }).catch(function() {});
+  }
+  function gibbsJobAction(target, body) {
+    return fetch(target, {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)}).then(function(r) {
+      if (!r.ok) throw Error(); return r.json();
+    });
+  }
+  if (document.addEventListener) document.addEventListener('click', function(event) {
+    if (!gibbsEnabled || window.BVOS_APP || !shown('gibbs')) return;
+    var target = event.target;
+    var button = target && target.closest && target.closest('[data-gibbs-button]');
+    var stop = target && target.closest && target.closest('[data-gibbs-stop]');
+    var report = target && target.closest && target.closest('[data-gibbs-report]');
+    if (button && !button.disabled) {
+      button.disabled = true;
+      gibbsJobAction('/gibbs/job', {button:button.dataset.gibbsButton}).then(function(data) {
+        gibbsAnswers.unshift('<div class="gibbs-answer"><p>'+esc(data.answer)+'</p></div>');
+        gibbsAnswers = gibbsAnswers.slice(0,10);
+        document.getElementById('gibbs-answers').innerHTML = gibbsAnswers.join('');
+        gibbsPollJobs(); return gibbsSpeak(data.answer);
+      }).catch(function() {document.getElementById('gibbs-status').textContent = 'Couldn’t start the job. Try again.';}).then(function() {button.disabled = false;});
+    }
+    if (stop) gibbsJobAction('/gibbs/stop', {id:stop.dataset.gibbsStop}).then(gibbsPollJobs).catch(function() {document.getElementById('gibbs-status').textContent = 'Couldn’t stop the job. Try again.';});
+    if (report) fetch('/gibbs/report?id='+encodeURIComponent(report.dataset.gibbsReport)).then(function(r) {
+      if (!r.ok) throw Error(); return r.json();
+    }).then(function(data) {
+      document.getElementById('gibbs-report-text').textContent = data.report;
+      document.getElementById('gibbs-report').showModal();
+    }).catch(function() {document.getElementById('gibbs-status').textContent = 'Couldn’t open the report. Try again.';});
+  });
+  function renderGibbsJobs(data) {
+    var enabled = data.gibbs === true && !window.BVOS_APP;
+    var buttons = document.getElementById('gibbs-buttons');
+    if (buttons) buttons.innerHTML = (enabled ? data.gibbs_buttons || [] : []).map(function(button) {
+      return '<button type="button" data-gibbs-button="'+esc(button.id)+'">'+esc(button.label)+'</button>';
+    }).join('');
+    gibbsUsage(enabled ? data.claude_usage : null);
+    gibbsRenderJobs(enabled ? data.gibbs_jobs || [] : [], false);
   }
   function gibbsMicBlocked() {
     gibbsHolding = false;
@@ -865,7 +960,7 @@ details p { margin:14px 0 0; font-size:13px; color:var(--muted); }
     document.addEventListener('input', function(event) {
       if (event.target.id === 'health-log-text') healthLogText = event.target.value;
     });
-    document.addEventListener('click', function(event) {
+    if (document.addEventListener) document.addEventListener('click', function(event) {
       var button = event.target.closest('[data-health-copy]');
       if (!button) return;
       var draft = healthDrafts[Number(button.dataset.healthCopy)];
@@ -1336,6 +1431,7 @@ details p { margin:14px 0 0; font-size:13px; color:var(--muted); }
     ++top3Request;
     if (data.top3_live === true && !top3Timer && typeof setInterval === 'function') top3Timer = setInterval(pollTop3, 60000);
     gibbsEnabled = data.gibbs === true;
+    renderGibbsJobs(data);
     gibbsVoiceAvailable = true;
     loadGibbsMute();
     gibbsVisibility();
